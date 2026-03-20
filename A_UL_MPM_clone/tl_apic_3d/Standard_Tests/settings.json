@@ -1,0 +1,95 @@
+{
+    "material_properties":{
+        "E": 14000,
+        "nu": 0.2
+    },
+    "17":{
+        "offset": -0.015,
+        "domain_min_corner": [0.0, 0.0, 0.0],
+        "domain_max_corner": [1.0, 1.0, 2.0],
+        "resolution": [64, 64, 128],
+        "fluid":{
+            "domain_min_corner": [0.3, 0.35, 0.7],
+            "domain_max_corner": [0.7, 0.55, 1.3],
+            "npc": 4,
+            "viscosity": 0.0,
+            "bulk_modulus": 100.0
+        },
+        "boat":{
+            "n_p": 10000,
+            "file_path": "/home/haozhe/Nova/Projects/affine_tl/examples/boat.obj",
+            "speed_factor": 1.5,
+            "x_factor": 0.2,
+            "z_factor": 0.2,
+            "sdf":{
+                "file_path": "/home/haozhe/Nova/Projects/affine_tl/examples/phi.txt",
+                "scaling_factor": 0.001
+            }
+        }
+    },
+    "23":{
+        "domain_min_corner": [0.0, 0.0, 0.0],
+        "domain_max_corner": [1.0, 2.0, 1.0],
+        "resolution": [64, 128, 64],
+        "n_p": 10000,
+        "radius": 0.01,
+        "cups":[
+            {
+                "lower_height": 0.175,
+                "upper_height": 0.2,
+                "pin_point": [0.5,0.0,0.5],
+                "alpha":0.2
+            }
+        ],
+        "scaling_factor": 0.05,
+        "armadillo":[
+            {
+                "viscosity": 1.0,
+                "bulk_modulus": 100.0,
+                "offsets":[0, -0.2, 0]
+                // "offsets":[0, -0.25, 0]
+
+            },
+            {
+                "viscosity": 1.0,
+                "bulk_modulus": 100.0,
+                "offsets":[-0.075,-0.05, 0.05]
+                // "offsets":[-0.075,-0.5, 0.05]
+            },
+            {
+                "viscosity": 1.0,
+                "bulk_modulus": 100.0,
+                "offsets":[0.05, 0, 0]
+                // "offsets":[0.05, -0.45, 0]
+            },
+            {
+                "viscosity": 1.0,
+                "bulk_modulus": 100.0,
+                "offsets":[-0.05, 0.15, -0.05]
+                // "offsets":[-0.05, -0.3, -0.05]
+            }
+        ]
+    },
+    "240":{
+        "domain_min_corner": [0.0, 0.0, 0.0],
+        "domain_max_corner": [1.0, 2.0, 1.0],
+        "resolution": [64, 128, 64],
+        "n_p": 100000
+    },
+    "241":{
+        "domain_min_corner": [0.0, 0.0, 0.0],
+        "domain_max_corner": [1.0, 2.0, 1.0],
+        "resolution": [64, 128, 64],
+        "n_p": 6000000
+    },
+    "31":{
+        "counts": [128,128,128],
+        "domain": [1, 1, 1],
+        "material_properties":{
+            "E":500,
+            "nu": 0.4
+        },
+        "use_const_dt": true,
+        "const_dt": 1e-3
+    }
+}
