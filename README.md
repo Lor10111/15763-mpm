@@ -1,6 +1,7 @@
 # 15763-mpm
 
 Project proposal: A comparative study of recent improvements to the Material Point Method
+
 Group member:
 
 Korawich Kavee kkavee@andrew.cmu.edu
