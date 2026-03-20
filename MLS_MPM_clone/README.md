@@ -1,3 +1,14 @@
+## Note to self
+I have faced an issue with `pip install mpm-pytorch` when I attemp to try **python simulate.py --config examples/jelly.yaml** so I just do this
+```bash
+pip install warp-lang
+```
+After this, I faced another problem.
+```bash
+U_p = wp.mat33(zero3, zero3, zero3)
+;Passing vectors to `wp.matrix()` isn't supported, use `wp.matrix_from_rows()` or `wp.matrix_from_cols()` instead.
+```
+
 # A PyTorch Implementation of MLS-MPM (Moving Least Squares Material Point Method)
 This repository provides a PyTorch implementation of the MLS-MPM (Moving Least Squares Material Point Method). The algorithm is implemented using **a few lines of tensor operations in PyTorch**, making it naturally differentiable and optimized for GPU acceleration. 
 The code is vectorized without any explicit loops, which makes it efficient for large-scale simulations. 
