@@ -1,4 +1,4 @@
-## Note to self
+## Note to self by Korawich Kavee
 I have faced an issue with `pip install mpm-pytorch` when I attemp to try **python simulate.py --config examples/jelly.yaml** so I just do this
 ```bash
 pip install warp-lang
