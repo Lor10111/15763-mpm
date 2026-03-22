@@ -9,7 +9,19 @@ U_p = wp.mat33(zero3, zero3, zero3)
 ;Passing vectors to `wp.matrix()` isn't supported, use `wp.matrix_from_rows()` or `wp.matrix_from_cols()` instead.
 ```
 This lead to me look into the SVD script, I then commit to do this https://github.com/Lor10111/15763-mpm/commit/141eaf239affd0bfc9c7fb4c3bb847842ccbd6dc whihc now make the jelly example works. 
-
+```bash
+mypath\MPM-PyTorch-master> python simulate.py --config examples/jelly.yaml
+Warp 1.12.0 initialized:
+   CUDA Toolkit 12.9, Driver 12.8
+   Devices:
+     "cpu"      : "Intel64 Family 6 Model 165 Stepping 3, GenuineIntel"
+     "cuda:0"   : "NVIDIA T400" (2 GiB, sm_75, mempool enabled)
+   Kernel cache:
+     \\?\C:\Users\keyge\AppData\Local\NVIDIA\warp\Cache\1.12.0
+Start simulation with config: examples/jelly.yaml
+Simulating:   0%|                                                                                                                          | 0/150 [00:00<?, ?it/s]Module mpm_pytorch.constitutive_models.warp_svd.svd 35b1339 load on device 'cpu' took 1731.49 ms  (compiled)                                 | 0/10 [00:00<?, ?it/s] 
+Rendering to ./output\jelly.gif...
+```
 # A PyTorch Implementation of MLS-MPM (Moving Least Squares Material Point Method)
 This repository provides a PyTorch implementation of the MLS-MPM (Moving Least Squares Material Point Method). The algorithm is implemented using **a few lines of tensor operations in PyTorch**, making it naturally differentiable and optimized for GPU acceleration. 
 The code is vectorized without any explicit loops, which makes it efficient for large-scale simulations. 
