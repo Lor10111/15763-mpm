@@ -19,7 +19,8 @@ Warp 1.12.0 initialized:
    Kernel cache:
      \\?\C:\Users\keyge\AppData\Local\NVIDIA\warp\Cache\1.12.0
 Start simulation with config: examples/jelly.yaml
-Simulating:   0%|                                                                                                                          | 0/150 [00:00<?, ?it/s]Module mpm_pytorch.constitutive_models.warp_svd.svd 35b1339 load on device 'cpu' took 1731.49 ms  (compiled)                                 | 0/10 [00:00<?, ?it/s] 
+Simulating:   0%|                                                                                                                          | 0/150 [00:00<?, ?it/s]
+Module mpm_pytorch.constitutive_models.warp_svd.svd 35b1339 load on device 'cpu' took 1731.49 ms  (compiled)                                 | 0/10 [00:00<?, ?it/s] 
 Rendering to ./output\jelly.gif...
 ```
 # A PyTorch Implementation of MLS-MPM (Moving Least Squares Material Point Method)
