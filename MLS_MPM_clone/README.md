@@ -8,6 +8,7 @@ After this, I faced another problem.
 U_p = wp.mat33(zero3, zero3, zero3)
 ;Passing vectors to `wp.matrix()` isn't supported, use `wp.matrix_from_rows()` or `wp.matrix_from_cols()` instead.
 ```
+This lead to me look into the SVD script, I then commit to do this https://github.com/Lor10111/15763-mpm/commit/141eaf239affd0bfc9c7fb4c3bb847842ccbd6dc whihc now make the jelly example works. 
 
 # A PyTorch Implementation of MLS-MPM (Moving Least Squares Material Point Method)
 This repository provides a PyTorch implementation of the MLS-MPM (Moving Least Squares Material Point Method). The algorithm is implemented using **a few lines of tensor operations in PyTorch**, making it naturally differentiable and optimized for GPU acceleration. 
