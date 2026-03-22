@@ -1,4 +1,5 @@
 ## Note to self by Korawich Kavee
+I actually found 2 repos: One is https://github.com/yuanming-hu/taichi_mpm and the other https://github.com/wgsxm/MPM-PyTorch This subfolder is for the later one. 
 I have faced an issue with `pip install mpm-pytorch` when I attemp to try **python simulate.py --config examples/jelly.yaml** so I just do this
 ```bash
 pip install warp-lang
