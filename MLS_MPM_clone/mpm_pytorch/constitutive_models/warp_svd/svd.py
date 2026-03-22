@@ -68,9 +68,11 @@ class SVDFunction(autograd.Function):
         p = wp.tid()
 
         zero3 = wp.vec3(0.0)
-        U_p = wp.mat33(zero3, zero3, zero3)
+        # U_p = wp.mat33(zero3, zero3, zero3) # (Korawich's note) I think newer versions of Warp no longer allow passing vectors into wp.mat33() / wp.matrix()
+        U_p = wp.matrix_from_cols(zero3, zero3, zero3)
         sigma_p = wp.vec3(0.0)
-        V_p = wp.mat33(zero3, zero3, zero3)
+        # V_p = wp.mat33(zero3, zero3, zero3)
+        V_p = wp.matrix_from_cols(zero3, zero3, zero3)
 
         wp.svd3(A[p], U_p, sigma_p, V_p)
 
