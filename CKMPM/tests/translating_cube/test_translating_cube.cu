@@ -1,4 +1,4 @@
-#include "translating_cube.cuh"
+#include "test_translating_cube.cuh"
 #include "mpm_engine.cuh"
 
 
