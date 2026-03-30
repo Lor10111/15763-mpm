@@ -42,12 +42,14 @@ public:
     constexpr static float kParticlePerCell_ = 8.0f;
     constexpr static float kParticleVolume_ = kDx_ * kDx_ * kDx_ / kParticlePerCell_;
     constexpr static float kParticleMass_ = kParticleVolume_ * kRho_;
-
+    
+    //time
     constexpr static uint32_t kFps_ = 48;
     constexpr static float kCfl_ = 0.5f;
     constexpr static float kDtFactor_ = 1.0f;
     constexpr static float kTotalSimulatedTime_ = 5.0f;
 
+    //domain
     typedef MPMDomainRange<64, 64, 64> DomainRange_;
     typedef MPMDomainOffset<0, 0, 0> DomainOffset_;
     typedef MPMDomain<DomainRange_, DomainOffset_> Domain_;
@@ -89,7 +91,7 @@ public:
             return static_cast<uint32_t>(std::round(kTotalSimulatedTime_ * GetFpsImpl()));
         }
 
-        constexpr MPM_FORCE_INLINE MPM_HOST_DEV_FUNC auto GetGravityImpl() const -> float { return 0.f; }
+        constexpr MPM_FORCE_INLINE MPM_HOST_DEV_FUNC auto GetGravityImpl() const -> float { return 0.f; }// no gravity
         constexpr MPM_FORCE_INLINE MPM_HOST_DEV_FUNC auto GetMassClampImpl() const -> float { return 0.f; }
         constexpr MPM_FORCE_INLINE MPM_HOST_DEV_FUNC auto GetExistRigidParticleImpl() const -> bool { return false; }
         constexpr MPM_FORCE_INLINE MPM_HOST_DEV_FUNC auto GetRigidParticleCountImpl() const -> uint32_t { return 0; }
