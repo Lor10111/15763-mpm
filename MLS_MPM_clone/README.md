@@ -24,6 +24,63 @@ Simulating:   0%|                                                               
 Module mpm_pytorch.constitutive_models.warp_svd.svd 35b1339 load on device 'cpu' took 1731.49 ms  (compiled)                                 | 0/10 [00:00<?, ?it/s] 
 Rendering to ./output\jelly.gif...
 ```
+
+Test with water and snow
+```bash
+PS F:\Google\andrew\My Drive\15763 Physics-based Animation of Solids and F
+rosoft\WindowsApps\python3.13.exe "f:/Google/andrew/My Drive/15763 Physics
+ulate.py"
+Warp 1.12.0 initialized:
+   CUDA Toolkit 12.9, Driver 12.8
+   Devices:
+     "cpu"      : "Intel64 Family 6 Model 165 Stepping 3, GenuineIntel"
+     "cuda:0"   : "NVIDIA T400" (2 GiB, sm_75, mempool enabled)        
+   Kernel cache:
+     \\?\C:\Users\keyge\AppData\Local\NVIDIA\warp\Cache\1.12.0
+usage: simulate.py [-h] --config CONFIG
+simulate.py: error: the following arguments are required: --config
+PS F:\Google\andrew\My Drive\15763 Physics-based Animation of Solids and F
+es/jelly.yaml
+Warp 1.12.0 initialized:
+   CUDA Toolkit 12.9, Driver 12.8
+   Devices:
+     "cpu"      : "Intel64 Family 6 Model 165 Stepping 3, GenuineIntel"
+     "cuda:0"   : "NVIDIA T400" (2 GiB, sm_75, mempool enabled)        
+   Kernel cache:
+     \\?\C:\Users\keyge\AppData\Local\NVIDIA\warp\Cache\1.12
+                                                                          
+vd.svd 35b1339 load on device 'cpu' took 104.57 ms  (cached)      | 0/10 [
+Rendering to ./output\jelly.gif...
+PS F:\Google\andrew\My Drive\15763 Physics-based Animation of Solids and F
+ *  History restored 
+
+PS F:\Google\andrew\My Drive\15763 Physics-based Animation of Solids and Fluids\MPpython simulate.py --config examples/water.yaml
+Warp 1.12.0 initialized:
+   CUDA Toolkit 12.9, Driver 12.8
+   Devices:
+     "cpu"      : "Intel64 Family 6 Model 165 Stepping 3, GenuineIntel"
+     "cuda:0"   : "NVIDIA T400" (2 GiB, sm_75, mempool enabled)        
+   Kernel cache:
+     \\?\C:\Users\keyge\AppData\Local\NVIDIA\warp\Cache\1.12.0
+Start simulation with config: examples/water.yaml
+Simulating:   0%|                                | 0/150 [00:00<?, ?it/s]Module mpm_pytorch.constitutive_models.warp_svd.svd 35b1339 load on device 
+'cpu' took 102.74 ms  (cached)
+Rendering to ./output\water.gif...
+PS F:\Google\andrew\My Drive\15763 Physics-based Animation of Solids and Fluids\MPM-PyTorch-master> python simulate.py --config examples/snow.yaml  
+Warp 1.12.0 initialized:
+   CUDA Toolkit 12.9, Driver 12.8
+   Devices:
+     "cpu"      : "Intel64 Family 6 Model 165 Stepping 3, GenuineIntel"
+     "cuda:0"   : "NVIDIA T400" (2 GiB, sm_75, mempool enabled)
+   Kernel cache:
+     \\?\C:\Users\keyge\AppData\Local\NVIDIA\warp\Cache\1.12.0
+Start simulation with config: examples/snow.yaml
+Simulating:   0%|                                | 0/150 [00:00<?, ?it/s]Module mpm_pytorch.constitutive_models.warp_svd.svd 35b1339 load on device 
+'cpu' took 2.34 ms  (cached)
+Rendering to ./output\snow.gif...
+```
+![water](output\water.gif)
+
 # A PyTorch Implementation of MLS-MPM (Moving Least Squares Material Point Method)
 This repository provides a PyTorch implementation of the MLS-MPM (Moving Least Squares Material Point Method). The algorithm is implemented using **a few lines of tensor operations in PyTorch**, making it naturally differentiable and optimized for GPU acceleration. 
 The code is vectorized without any explicit loops, which makes it efficient for large-scale simulations. 
