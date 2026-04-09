@@ -79,7 +79,8 @@ Simulating:   0%|                                | 0/150 [00:00<?, ?it/s]Module 
 'cpu' took 2.34 ms  (cached)
 Rendering to ./output\snow.gif...
 ```
-![water](output\water.gif)
+<img src="output\water.gif" width=400> <img src="assets/sand.gif" width=400> 
+
 
 # A PyTorch Implementation of MLS-MPM (Moving Least Squares Material Point Method)
 This repository provides a PyTorch implementation of the MLS-MPM (Moving Least Squares Material Point Method). The algorithm is implemented using **a few lines of tensor operations in PyTorch**, making it naturally differentiable and optimized for GPU acceleration. 
