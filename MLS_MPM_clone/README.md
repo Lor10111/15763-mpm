@@ -79,7 +79,7 @@ Simulating:   0%|                                | 0/150 [00:00<?, ?it/s]Module 
 'cpu' took 2.34 ms  (cached)
 Rendering to ./output\snow.gif...
 ```
-<img src="output\water.gif" width=400> <img src="assets/sand.gif" width=400> 
+<img src="output\water.gif" width=400> <img src="output\snow.gif" width=400> 
 
 
 # A PyTorch Implementation of MLS-MPM (Moving Least Squares Material Point Method)
