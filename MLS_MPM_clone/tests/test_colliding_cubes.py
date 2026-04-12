@@ -25,7 +25,7 @@ DENSITY = 1000.0
 CFL = 0.5
 PPC = 8
 FPS = 48
-TOTAL_TIME = 3.0
+TOTAL_TIME = 5.0
 V0 = 0.1
 
 C_S = ((E * (1.0 - NU)) / ((1.0 + NU) * (1.0 - 2.0 * NU) * DENSITY)) ** 0.5
@@ -120,15 +120,17 @@ def run_simulation(device):
 def render_gif(frames_0, frames_1):
     fig = plt.figure(figsize=(7.5, 7.0))
     ax = fig.add_subplot(111, projection="3d")
-    ax.set_xlim(0.15, 0.85)
-    ax.set_ylim(0.35, 0.65)
-    ax.set_zlim(0.35, 0.65)
+    ax.set_xlim(0.25, 0.75)
+    ax.set_ylim(0.25, 0.75)
+    ax.set_zlim(0.25, 0.75)
     ax.set_xlabel("x [m]")
     ax.set_ylabel("y [m]")
     ax.set_zlabel("z [m]")
     ax.set_title("Colliding Cubes - MLS-MPM (3D)")
-    ax.set_box_aspect((1.0, 1.0, 1.0))
-    ax.view_init(elev=20.0, azim=35.0)
+    ax.set_proj_type("persp")
+    ax.view_init(elev=20.0, azim=-65.0)
+    ax.view_init(elev=20.0, azim=-90.0)
+    ax.grid(False)
 
     scat0 = ax.scatter([], [], [], s=1, c="#e74c3c", depthshade=False, label="Cube 1")
     scat1 = ax.scatter([], [], [], s=1, c="#2e86de", depthshade=False, label="Cube 2")

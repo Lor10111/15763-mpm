@@ -224,7 +224,7 @@ def step():
 # ANCHOR_END: time_step
 
 # ── GGUI 3D visualisation ─────────────────────────────────────────────────────
-steps_per_frame = max(1, int(round(1.0 / (fps * dt))))
+steps_per_frame = int(1.0 / (24 * dt))
 total_steps     = int(round(total_time * fps)) * steps_per_frame
 
 window = ti.ui.Window("Colliding Cubes – Basic MPM 3D", (900, 700))

@@ -1083,7 +1083,7 @@ template <typename Config, typename ParticleBuffer,
 	typename Partition, typename GridBlock>
 requires MPMFiniteDomainType<typename Partition::GridConfig_::Domain_> 
 __global__ auto CollectConservationMetric(
-	const ParticleBuffer buffer, ParticleBuffer nextBuffer, const Partition prevPartition, Partition partition, const MPMGrid<GridBlock> grid, Vector<float, 3>* momentum) -> void
+	const ParticleBuffer buffer, ParticleBuffer nextBuffer, const Partition prevPartition, Partition partition, const MPMGrid<GridBlock> grid, Vector<float, 3>* momentum, float* kineticEnergy) -> void
 {
 	constexpr auto config = Config{};
 
@@ -1111,6 +1111,7 @@ __global__ auto CollectConservationMetric(
 
 	__shared__ uint8_t sharedBuffer[(kP2GBlockBufferArenaSize + kG2PBlockBufferArenaSize) * sizeof(float)];
     __shared__ Vector<float, 3> blockMomentum[4];
+    __shared__ float blockKineticEnergy;
 
     if(threadIdx.x == 0)
     {
@@ -1118,6 +1119,7 @@ __global__ auto CollectConservationMetric(
         blockMomentum[1] = 0.f;
         blockMomentum[2] = 0.f;
         blockMomentum[3] = 0.f;
+        blockKineticEnergy = 0.f;
     }
     __syncthreads();
 
@@ -1337,6 +1339,11 @@ __global__ auto CollectConservationMetric(
                                     particlePosition[2] * particleVelocity[0] - particlePosition[0] * particleVelocity[2],
                                     particlePosition[0] * particleVelocity[1] - particlePosition[1] * particleVelocity[0]
                                 };
+            const float particleKineticEnergy =
+                0.5f * buffer.GetParticleMass() *
+                (particleVelocity[0] * particleVelocity[0] +
+                 particleVelocity[1] * particleVelocity[1] +
+                 particleVelocity[2] * particleVelocity[2]);
             atomicAdd(&blockMomentum[2][0], particleLinearMomentum[0]);
             atomicAdd(&blockMomentum[2][1], particleLinearMomentum[1]);
             atomicAdd(&blockMomentum[2][2], particleLinearMomentum[2]);
@@ -1344,6 +1351,7 @@ __global__ auto CollectConservationMetric(
             atomicAdd(&blockMomentum[3][0], particleAngularMomentum[0]);
             atomicAdd(&blockMomentum[3][1], particleAngularMomentum[1]);
             atomicAdd(&blockMomentum[3][2], particleAngularMomentum[2]);
+            atomicAdd(&blockKineticEnergy, particleKineticEnergy);
 
 		}
     __syncthreads();
@@ -1357,6 +1365,7 @@ __global__ auto CollectConservationMetric(
         atomicAdd(&lagrangianAngularMomentum[0], blockMomentum[3][0]);
         atomicAdd(&lagrangianAngularMomentum[1], blockMomentum[3][1]);
         atomicAdd(&lagrangianAngularMomentum[2], blockMomentum[3][2]);
+        atomicAdd(kineticEnergy, blockKineticEnergy);
     }
 }
 

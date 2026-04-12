@@ -493,7 +493,12 @@ class MPMEngine
 
         Vector<float, 3> *conservationMetric = nullptr;
         Vector<float, 3> conservationMetricHost[4];
+        Vector<float, 3> lagrangianLinearVelocitySumHost[GetModelCount()];
+        float* kineticEnergy = nullptr;
+        float kineticEnergyHost[GetModelCount()];
         std::ofstream conservationMetricOutputFile[GetModelCount()];
+        const bool printCollidingCubeDiagnostics =
+            exportRootPath.find("colliding_cubes") != std::string::npos;
         if(collectConservationMetric)
         {
             for(int i = 0; i < GetModelCount(); ++i)
@@ -507,6 +512,7 @@ class MPMEngine
                 }
             }
             cudaMalloc(reinterpret_cast<void**>(&conservationMetric), sizeof(float) * 3 * 4);
+            cudaMalloc(reinterpret_cast<void**>(&kineticEnergy), sizeof(float));
             cudaDeviceSynchronize();
         }
 
@@ -569,9 +575,12 @@ class MPMEngine
 
                         if(collectConservationMetric)
                         {
+                            Vector<float, 3> frameTotalMomentum = 0.f;
+                            float frameTotalKineticEnergy = 0.f;
                             for (int i = 0; i < GetModelCount(); ++i)
                                 {
                                     cudaMemsetAsync(conservationMetric, 0, sizeof(float) * 12, cuContext.GetComputeStream());
+                                    cudaMemsetAsync(kineticEnergy, 0, sizeof(float), cuContext.GetComputeStream());
                                     std::visit(
                                         [&](auto&& buffer) -> void
                                         {
@@ -582,12 +591,21 @@ class MPMEngine
 											buffer, std::get<std::decay_t<decltype(buffer)>>(
                                                 particleBuffer_[GetNextRollIndex()][i]),
                                             partition_[GetNextRollIndex()], partition_[GetRollIndex()],
-                                            grid_[0], conservationMetric);
+                                            grid_[0], conservationMetric, kineticEnergy);
                                         },
                                         particleBuffer_[GetRollIndex()][i]);
 
                                 cudaCheckError(cudaMemcpyAsync(&conservationMetricHost[0], conservationMetric, sizeof(float) * 3 * 4, cudaMemcpyDeviceToHost, cuContext.GetComputeStream()));
+                                cudaCheckError(cudaMemcpyAsync(&kineticEnergyHost[i], kineticEnergy, sizeof(float), cudaMemcpyDeviceToHost, cuContext.GetComputeStream()));
                                 cuContext.SyncStream<CudaUtil::StreamIndex::kCompute>();
+                                lagrangianLinearVelocitySumHost[i] = conservationMetricHost[2];
+                                frameTotalKineticEnergy += kineticEnergyHost[i];
+                                frameTotalMomentum += std::visit(
+                                    [&](auto&& buffer) -> Vector<float, 3>
+                                    {
+                                        return conservationMetricHost[2] * buffer.GetParticleMass();
+                                    },
+                                    particleBuffer_[GetRollIndex()][i]);
 
                                 spdlog::default_logger()->log(spdlog::level::off, "Frame: {}, Conservation Metric Info:\n"
                                              "\tLagrangian Linear Momentum: ({}, {}, {}), Norm: {}\n"
@@ -601,6 +619,21 @@ class MPMEngine
 
                                 conservationMetricOutputFile[i].write(reinterpret_cast<char*>(outputBuffer), 13 * sizeof(float));
                                 }
+
+                            if (printCollidingCubeDiagnostics && GetModelCount() >= 2)
+                            {
+                                const Vector<float, 3> avgVelocity0 =
+                                    lagrangianLinearVelocitySumHost[0] / static_cast<float>(particleCount_[0]);
+                                const Vector<float, 3> avgVelocity1 =
+                                    lagrangianLinearVelocitySumHost[1] / static_cast<float>(particleCount_[1]);
+                                printf(
+                                    "[colliding_cubes] frame=%d avg_v0=(%.6f, %.6f, %.6f) avg_v1=(%.6f, %.6f, %.6f) total_p=(%.6f, %.6f, %.6f) total_ke=%.8f\n",
+                                    currentFrameIndex_,
+                                    avgVelocity0[0], avgVelocity0[1], avgVelocity0[2],
+                                    avgVelocity1[0], avgVelocity1[1], avgVelocity1[2],
+                                    frameTotalMomentum[0], frameTotalMomentum[1], frameTotalMomentum[2],
+                                    frameTotalKineticEnergy);
+                            }
                         }
 
 
@@ -900,6 +933,7 @@ class MPMEngine
         if(collectConservationMetric)
         {
             cudaFree(conservationMetric);
+            cudaFree(kineticEnergy);
             for(int i = 0; i < GetModelCount(); ++i)
             {
                 conservationMetricOutputFile[i].close();
