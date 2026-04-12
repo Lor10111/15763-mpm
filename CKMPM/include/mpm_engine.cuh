@@ -575,7 +575,7 @@ class MPMEngine
 
                         if(collectConservationMetric)
                         {
-                            Vector<float, 3> frameTotalMomentum = 0.f;
+                            Vector<float, 3> frameTotalMomentum{0.f, 0.f, 0.f};
                             float frameTotalKineticEnergy = 0.f;
                             for (int i = 0; i < GetModelCount(); ++i)
                                 {
