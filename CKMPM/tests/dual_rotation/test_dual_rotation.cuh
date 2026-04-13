@@ -26,7 +26,8 @@ public:
     constexpr static std::string_view kTestName_ = "dual_rotation";
 
     // ── 网格间距 ──────────────────────────────────────────────────────────
-    constexpr static float kDx_ = 1.0f / 256.f;
+    // dx=1/64 与 colliding_cubes / MLS-MPM / Basic-MPM-3D 保持一致
+    constexpr static float kDx_ = 1.0f / 64.f;
 
     // ── 材料：固定协旋转弹性 ──────────────────────────────────────────────
     constexpr static auto kConstitutiveModel_ = MPMConstitutiveModel::kFixedCorotated;
@@ -53,12 +54,12 @@ public:
     constexpr static float    kTotalSimulatedTime_ = 5.0f;
 
     // ── 角速度大小（rad/s）────────────────────────────────────────────────
-    // 方块半径约 4*sqrt(2)*kDx ≈ 0.022 m，最大线速度 ≈ kOmega * 0.022 m/s
-    // kOmega = 2.0 → v_max ≈ 0.044 m/s，与 translating_cube 量级一致
+    // 方块半径约 4*sqrt(2)*kDx ≈ 0.089 m，最大线速度 ≈ kOmega * 0.089 ≈ 0.18 m/s
     constexpr static float kOmega_ = 2.0f;
 
-    // ── 网格域：64×64×64 个 block = 256³ 格 = 1m³ ────────────────────────
-    typedef MPMDomainRange<64, 64, 64>             DomainRange_;
+    // ── 网格域：16×16×16 个 block × 4 cells/block = 64³ 格 × (1/64 m) = 1m³ ──
+    // 与 colliding_cubes 完全相同，避免粒子飞出活跃 block 范围
+    typedef MPMDomainRange<16, 16, 16>             DomainRange_;
     typedef MPMDomainOffset<0, 0, 0>               DomainOffset_;
     typedef MPMDomain<DomainRange_, DomainOffset_> Domain_;
     typedef MPMGridConfig<Domain_>                 GridConfig_;
@@ -81,7 +82,7 @@ public:
         }
 
         constexpr MPM_FORCE_INLINE MPM_HOST_DEV_FUNC auto GetMaxParticleCountPerBucketImpl() const -> uint32_t { return 32; }
-        constexpr MPM_FORCE_INLINE MPM_HOST_DEV_FUNC auto GetMaxActiveBlockCountImpl() const -> uint32_t { return 6000; }
+        constexpr MPM_FORCE_INLINE MPM_HOST_DEV_FUNC auto GetMaxActiveBlockCountImpl() const -> uint32_t { return 200; }
         constexpr MPM_FORCE_INLINE MPM_HOST_DEV_FUNC auto GetFpsImpl() const -> uint32_t { return kFps_; }
 
         constexpr MPM_FORCE_INLINE MPM_HOST_DEV_FUNC auto GetDtImpl() const -> float
@@ -130,11 +131,9 @@ auto SetupModel(uint32_t& particleCount) -> std::vector<MPMModelVariant>
     constexpr float kOmega = MPMTestScene::kOmega_;
 
     // ── 两个方块的中心 ────────────────────────────────────────────────────
-    // 方块1：x = 80 格，方块2：x = 176 格，间距 96 格（≈ 0.375m）
-    // y/z 均居中在 128 格，两块都距域边界足够远
-    // 方块占 ±4 格（9×9×9 = 729 格），所以间隙 = 176-84-(-80+4)... 即 84 格
-    auto center0 = Vector<float, 3>{80.f,  128.f, 128.f} * kDx;  // 方块1 中心
-    auto center1 = Vector<float, 3>{176.f, 128.f, 128.f} * kDx;  // 方块2 中心
+    // dx=1/64，64³ 格，域大小 = 1m³
+    auto center0 = Vector<float, 3>{20.f, 32.f, 32.f} * kDx;  // 方块1 中心 (0.3125, 0.5, 0.5)
+    auto center1 = Vector<float, 3>{44.f, 32.f, 32.f} * kDx;  // 方块2 中心 (0.6875, 0.5, 0.5)
 
     std::vector<Vector<float, 3>> position[2];
     std::vector<Vector<float, 3>> velocity[2];
@@ -157,9 +156,9 @@ auto SetupModel(uint32_t& particleCount) -> std::vector<MPMModelVariant>
                     int dk =  w & 1;
 
                     auto offset = Vector<float, 3>{
-                        i + 0.25f + di * 0.5f,
-                        j + 0.25f + dj * 0.5f,
-                        k + 0.25f + dk * 0.5f
+                        i - 0.25f + di * 0.5f,
+                        j - 0.25f + dj * 0.5f,
+                        k - 0.25f + dk * 0.5f
                     } * kDx;
 
                     // ── 方块1：绕 z 轴正向旋转，ω = (0, 0, +kOmega) ────────

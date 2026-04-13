@@ -77,7 +77,10 @@ public:
     constexpr static float    kTotalSimulatedTime_ = 3.0f;   // 3 s → 144 frames
 
     // ── grid / domain ─────────────────────────────────────────────────────────
-    typedef MPMDomainRange<64, 64, 64>  DomainRange_;
+    // dx=1/64, block_size=4 → cells per dim = blocks×4
+    // Need 64 cells for a 1m domain: 16 blocks × 4 cells = 64 cells × (1/64m) = 1.0m ✓
+    // (DomainRange<64,64,64> would give 256 cells = 4m domain → particles escape after bounce)
+    typedef MPMDomainRange<16, 16, 16>  DomainRange_;
     typedef MPMDomainOffset<0, 0, 0>    DomainOffset_;
     typedef MPMDomain<DomainRange_, DomainOffset_> Domain_;
     typedef MPMGridConfig<Domain_>      GridConfig_;
@@ -99,7 +102,8 @@ public:
             return GetBlockVolumeImpl() * GetMaxParticleCountPerCellImpl();
         }
         constexpr MPM_FORCE_INLINE MPM_HOST_DEV_FUNC auto GetMaxParticleCountPerBucketImpl() const -> uint32_t { return 32; }
-        constexpr MPM_FORCE_INLINE MPM_HOST_DEV_FUNC auto GetMaxActiveBlockCountImpl()       const -> uint32_t { return 8000; }
+        constexpr MPM_FORCE_INLINE MPM_HOST_DEV_FUNC auto GetMaxActiveBlockCountImpl()       const -> uint32_t { return 1000; }
+        // 16³ = 4096 blocks total; cubes occupy ~20 each → 1000 is safe headroom
 
         constexpr MPM_FORCE_INLINE MPM_HOST_DEV_FUNC auto GetFpsImpl()  const -> uint32_t { return kFps_; }
         constexpr MPM_FORCE_INLINE MPM_HOST_DEV_FUNC auto GetDtImpl()   const -> float

@@ -25,15 +25,13 @@ DENSITY = 1000.0
 CFL = 0.5
 PPC = 8
 FPS = 48
-TOTAL_TIME = 5.0
+TOTAL_TIME = 3.0
 V0 = 0.1
 
 C_S = ((E * (1.0 - NU)) / ((1.0 + NU) * (1.0 - 2.0 * NU) * DENSITY)) ** 0.5
 DT = CFL * DX / C_S
 PARTICLE_VOL = DX ** 3 / PPC
 PARTICLE_MASS = PARTICLE_VOL * DENSITY
-STEPS_PER_FRAME = max(1, int(round(1.0 / (FPS * DT))))
-TOTAL_FRAMES = int(round(TOTAL_TIME * FPS))
 
 OUT_DIR = os.path.join(os.path.dirname(__file__), "output")
 OUT_GIF = os.path.join(OUT_DIR, "colliding_cubes.gif")
@@ -99,6 +97,9 @@ def run_simulation(device):
 
     frames_0 = []
     frames_1 = []
+    target_frame_dt = 1.0 / FPS
+    next_frame_time = 0.0
+    sim_time = 0.0
 
     def record():
         positions = x_t.detach().cpu().numpy()
@@ -106,13 +107,17 @@ def run_simulation(device):
         frames_1.append(positions[n0:].copy())
 
     record()
+    next_frame_time += target_frame_dt
 
-    for _ in tqdm(range(1, TOTAL_FRAMES), desc="Simulating"):
-        for _ in range(STEPS_PER_FRAME):
-            stress = elasticity(F)
-            x_t, v_t, C, F = solver(x_t, v_t, C, F, stress)
-            F = plasticity(F)
-        record()
+    while sim_time < TOTAL_TIME - 1e-12:
+        stress = elasticity(F)
+        x_t, v_t, C, F = solver(x_t, v_t, C, F, stress)
+        F = plasticity(F)
+        sim_time += DT
+
+        if sim_time + 1e-12 >= next_frame_time:
+            record()
+            next_frame_time += target_frame_dt
 
     return frames_0, frames_1
 
@@ -127,9 +132,9 @@ def render_gif(frames_0, frames_1):
     ax.set_ylabel("y [m]")
     ax.set_zlabel("z [m]")
     ax.set_title("Colliding Cubes - MLS-MPM (3D)")
+    ax.set_box_aspect((1, 1, 1))
     ax.set_proj_type("persp")
     ax.view_init(elev=20.0, azim=-65.0)
-    ax.view_init(elev=20.0, azim=-90.0)
     ax.grid(False)
 
     scat0 = ax.scatter([], [], [], s=1, c="#e74c3c", depthshade=False, label="Cube 1")
@@ -158,7 +163,7 @@ def render_gif(frames_0, frames_1):
 
 if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(f"[mlsmpm] grid_size={GRID_SIZE} dx={DX:.4e} dt={DT:.4e} total_frames={TOTAL_FRAMES}")
+    print(f"[mlsmpm] grid_size={GRID_SIZE} dx={DX:.4e} dt={DT:.4e} total_time={TOTAL_TIME:.3f}")
     print(f"[mlsmpm] particle_vol={PARTICLE_VOL:.3e} particle_mass={PARTICLE_MASS:.3e}")
     frames_0, frames_1 = run_simulation(device)
     print(f"[mlsmpm] simulation done, rendering 3D GIF -> {OUT_GIF}")

@@ -24,7 +24,7 @@
 # Usage:
 #   python simulator_3d.py
 
-import numpy as np
+'''import numpy as np
 import taichi as ti
 
 ti.init(arch=ti.cpu)   # swap to ti.gpu / ti.metal for faster execution
@@ -256,3 +256,263 @@ while window.running and sim_time < total_time + 1e-6:
     # on-screen time label (shown in window title)
     window.get_canvas().set_background_color((0.08, 0.08, 0.08))
     window.show()
+'''
+import os
+
+import numpy as np
+import taichi as ti
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+import matplotlib.animation as animation
+
+ti.init(arch=ti.cpu)   # swap to ti.gpu / ti.metal for faster execution
+
+# ── shared parameters ─────────────────────────────────────────────────────────
+grid_size = 64
+dx        = 1.0 / grid_size
+E, nu     = 1e6, 0.4
+density   = 1000.0
+mu        = E / (2.0 * (1.0 + nu))
+lam       = E * nu / ((1.0 + nu) * (1.0 - 2.0 * nu))
+c_s       = ((E * (1.0 - nu)) / ((1.0 + nu) * (1.0 - 2.0 * nu) * density)) ** 0.5
+CFL       = 0.5
+dt        = CFL * dx / c_s
+ppc       = 8
+fps       = 48
+total_time = 3.0
+
+particle_vol  = dx**3 / ppc
+particle_mass = particle_vol * density
+
+OUT_DIR = "output"
+OUT_GIF = os.path.join(OUT_DIR, "colliding_cubes_basic.gif")
+os.makedirs(OUT_DIR, exist_ok=True)
+
+print(f"[basic3d] dx={dx:.4e} c_s={c_s:.3f} dt={dt:.4e}")
+print(f"[basic3d] mu={mu:.3e} lam={lam:.3e}")
+print(f"[basic3d] particle_vol={particle_vol:.3e} particle_mass={particle_mass:.3e}")
+
+# ── particle setup ────────────────────────────────────────────────────────────
+def make_cube(cx, cy, cz, vx):
+    """Return (N,3) positions and (N,3) velocities for one cube."""
+    pos, vel = [], []
+    for i in range(-4, 5):
+        for j in range(-4, 5):
+            for k in range(-4, 5):
+                for w in range(8):
+                    di = (w & 4) >> 2
+                    dj = (w & 2) >> 1
+                    dk = w & 1
+                    pos.append([
+                        (cx + i + 0.25 + di * 0.5) * dx,
+                        (cy + j + 0.25 + dj * 0.5) * dx,
+                        (cz + k + 0.25 + dk * 0.5) * dx
+                    ])
+                    vel.append([vx, 0.0, 0.0])
+    return np.array(pos, dtype=np.float32), np.array(vel, dtype=np.float32)
+
+pos0, vel0 = make_cube(16, 32, 32, +0.1)   # Cube 1 →
+pos1, vel1 = make_cube(48, 32, 32, -0.1)   # Cube 2 ←
+n0 = len(pos0)
+n1 = len(pos1)
+
+all_pos = np.concatenate([pos0, pos1], axis=0)
+all_vel = np.concatenate([vel0, vel1], axis=0)
+
+N_particles = len(all_pos)
+print(f"[basic3d] N={N_particles} (n0={n0}, n1={n1})")
+
+# ── taichi fields ─────────────────────────────────────────────────────────────
+x       = ti.Vector.field(3, float, N_particles)
+v       = ti.Vector.field(3, float, N_particles)
+vol_f   = ti.field(float, N_particles)
+m_f     = ti.field(float, N_particles)
+F_f     = ti.Matrix.field(3, 3, float, N_particles)
+
+grid_m  = ti.field(float, (grid_size, grid_size, grid_size))
+grid_v  = ti.Vector.field(3, float, (grid_size, grid_size, grid_size))
+
+x.from_numpy(all_pos)
+v.from_numpy(all_vel)
+vol_f.fill(particle_vol)
+m_f.fill(particle_mass)
+F_f.from_numpy(np.tile(np.eye(3, dtype=np.float32), (N_particles, 1, 1)))
+
+# ── constitutive model: Fixed Corotated ───────────────────────────────────────
+@ti.func
+def fixed_corotated_pk1(Fp):
+    U, sig, V = ti.svd(Fp)
+    R   = U @ V.transpose()
+    J   = Fp.determinant()
+    Fit = Fp.inverse().transpose()
+    return 2.0 * mu * (Fp - R) + lam * (J - 1.0) * J * Fit
+
+# ── grid reset ────────────────────────────────────────────────────────────────
+@ti.kernel
+def reset_grid():
+    for i, j, k in grid_m:
+        grid_m[i, j, k] = 0.0
+        grid_v[i, j, k] = ti.Vector([0.0, 0.0, 0.0])
+
+# ── P2G ───────────────────────────────────────────────────────────────────────
+@ti.kernel
+def p2g():
+    for p in range(N_particles):
+        base = (x[p] / dx - 0.5).cast(int)
+        fx   = x[p] / dx - base.cast(float)
+        w    = [0.5 * (1.5 - fx)**2, 0.75 - (fx - 1.0)**2, 0.5 * (fx - 0.5)**2]
+        dw   = [fx - 1.5, 2.0 * (1.0 - fx), fx - 0.5]
+        P    = fixed_corotated_pk1(F_f[p])
+
+        for i in ti.static(range(3)):
+            for j in ti.static(range(3)):
+                for k in ti.static(range(3)):
+                    weight = w[i][0] * w[j][1] * w[k][2]
+                    grad_w = ti.Vector([
+                        dw[i][0] / dx * w[j][1]        * w[k][2],
+                        w[i][0]        * dw[j][1] / dx * w[k][2],
+                        w[i][0]        * w[j][1]        * dw[k][2] / dx,
+                    ])
+                    node = base + ti.Vector([i, j, k])
+                    grid_m[node[0], node[1], node[2]] += weight * m_f[p]
+                    grid_v[node[0], node[1], node[2]] += weight * m_f[p] * v[p]
+                    fi = -vol_f[p] * P @ F_f[p].transpose() @ grad_w
+                    grid_v[node[0], node[1], node[2]] += dt * fi
+
+# ── grid update ───────────────────────────────────────────────────────────────
+@ti.kernel
+def update_grid():
+    for i, j, k in grid_m:
+        if grid_m[i, j, k] > 0.0:
+            grid_v[i, j, k] /= grid_m[i, j, k]
+
+            # Dirichlet boundary guard
+            if (
+                i <= 3 or i >= grid_size - 3 or
+                j <= 3 or j >= grid_size - 3 or
+                k <= 3 or k >= grid_size - 3
+            ):
+                grid_v[i, j, k] = ti.Vector([0.0, 0.0, 0.0])
+
+# ── G2P ───────────────────────────────────────────────────────────────────────
+@ti.kernel
+def g2p():
+    for p in range(N_particles):
+        base = (x[p] / dx - 0.5).cast(int)
+        fx   = x[p] / dx - base.cast(float)
+        w    = [0.5 * (1.5 - fx)**2, 0.75 - (fx - 1.0)**2, 0.5 * (fx - 0.5)**2]
+        dw   = [fx - 1.5, 2.0 * (1.0 - fx), fx - 0.5]
+
+        new_v = ti.Vector.zero(float, 3)
+        v_grad_wT = ti.Matrix.zero(float, 3, 3)
+
+        for i in ti.static(range(3)):
+            for j in ti.static(range(3)):
+                for k in ti.static(range(3)):
+                    weight = w[i][0] * w[j][1] * w[k][2]
+                    grad_w = ti.Vector([
+                        dw[i][0] / dx * w[j][1]        * w[k][2],
+                        w[i][0]        * dw[j][1] / dx * w[k][2],
+                        w[i][0]        * w[j][1]        * dw[k][2] / dx,
+                    ])
+                    node = base + ti.Vector([i, j, k])
+                    gv = grid_v[node[0], node[1], node[2]]
+                    new_v += weight * gv
+                    v_grad_wT += gv.outer_product(grad_w)
+
+        v[p] = new_v
+        F_f[p] = (ti.Matrix.identity(float, 3) + dt * v_grad_wT) @ F_f[p]
+
+# ── advect ────────────────────────────────────────────────────────────────────
+@ti.kernel
+def advect():
+    for p in range(N_particles):
+        x[p] += dt * v[p]
+
+# ── time step ─────────────────────────────────────────────────────────────────
+def step():
+    reset_grid()
+    p2g()
+    update_grid()
+    g2p()
+    advect()
+
+# ── simulation + frame capture ────────────────────────────────────────────────
+def run_simulation():
+    frames_0 = []
+    frames_1 = []
+
+    target_frame_dt = 1.0 / fps
+    next_frame_time = 0.0
+    sim_time = 0.0
+
+    def record():
+        pos = x.to_numpy()
+        frames_0.append(pos[:n0].copy())
+        frames_1.append(pos[n0:].copy())
+
+    # record initial frame at t = 0
+    record()
+    next_frame_time += target_frame_dt
+
+    while sim_time < total_time - 1e-12:
+        step()
+        sim_time += dt
+
+        if sim_time + 1e-12 >= next_frame_time:
+            record()
+            next_frame_time += target_frame_dt
+
+    print(f"[basic3d] captured {len(frames_0)} frames")
+    return frames_0, frames_1
+
+# ── offline gif rendering ─────────────────────────────────────────────────────
+def render_gif(frames_0, frames_1):
+    fig = plt.figure(figsize=(7.5, 7.0))
+    ax = fig.add_subplot(111, projection="3d")
+
+    # Match MLS-MPM scale as closely as possible
+    ax.set_xlim(0.25, 0.75)
+    ax.set_ylim(0.25, 0.75)
+    ax.set_zlim(0.25, 0.75)
+
+    ax.set_xlabel("x [m]")
+    ax.set_ylabel("y [m]")
+    ax.set_zlabel("z [m]")
+    ax.set_title("Colliding Cubes - Basic MPM (3D)")
+
+    ax.set_box_aspect((1, 1, 1))
+    ax.set_proj_type("persp")
+    ax.view_init(elev=20.0, azim=-65.0)
+    ax.grid(False)
+
+    scat0 = ax.scatter([], [], [], s=1, c="#e74c3c", depthshade=False, label="Cube 1")
+    scat1 = ax.scatter([], [], [], s=1, c="#2e86de", depthshade=False, label="Cube 2")
+    time_txt = ax.text2D(0.02, 0.96, "", transform=ax.transAxes)
+    ax.legend(loc="upper right", markerscale=5)
+
+    def update(frame_id):
+        pts0 = frames_0[frame_id]
+        pts1 = frames_1[frame_id]
+        scat0._offsets3d = (pts0[:, 0], pts0[:, 1], pts0[:, 2])
+        scat1._offsets3d = (pts1[:, 0], pts1[:, 1], pts1[:, 2])
+        time_txt.set_text(f"t = {frame_id / fps:.3f} s")
+        return scat0, scat1, time_txt
+
+    ani = animation.FuncAnimation(
+        fig,
+        update,
+        frames=len(frames_0),
+        interval=1000 // fps,
+        blit=False,
+    )
+    ani.save(OUT_GIF, writer="pillow", fps=fps, dpi=100)
+    plt.close(fig)
+
+if __name__ == "__main__":
+    frames_0, frames_1 = run_simulation()
+    print(f"[basic3d] simulation done, rendering GIF -> {OUT_GIF}")
+    render_gif(frames_0, frames_1)
+    print(f"[basic3d] GIF saved -> {OUT_GIF}")
