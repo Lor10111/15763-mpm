@@ -124,15 +124,6 @@ def run_simulation(device):
     C   = torch.zeros(N, 3, 3, dtype=torch.float32, device=device)
     F   = torch.eye(3, dtype=torch.float32, device=device).unsqueeze(0).expand(N, -1, -1).clone()
 
-    A_pos = torch.tensor([[0.0, -OMEGA, 0.0],
-                          [OMEGA, 0.0, 0.0],
-                          [0.0, 0.0, 0.0]], dtype=torch.float32, device=device)
-    A_neg = torch.tensor([[0.0, OMEGA, 0.0],
-                          [-OMEGA, 0.0, 0.0],
-                          [0.0, 0.0, 0.0]], dtype=torch.float32, device=device)
-    C[:n0] = A_pos
-    C[n0:] = A_neg
-
     solver = MPMSolver(
         init_pos=x_t,
         rho=DENSITY,
@@ -168,8 +159,6 @@ def run_simulation(device):
         r    = pts - domain_center
         Lz   = float(PARTICLE_MASS * np.sum(r[:, 0] * vels[:, 1] - r[:, 1] * vels[:, 0]))
         Lz_history.append(Lz)
-        P = PARTICLE_MASS * np.sum(vels, axis=0)
-        print(f"[mlsmpm-rot] total linear momentum = ({P[0]:.6e}, {P[1]:.6e}, {P[2]:.6e})")
 
     record()
     next_frame_time += target_frame_dt
