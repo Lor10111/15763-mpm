@@ -75,7 +75,7 @@ def bridson_poisson_box(min_corner, max_corner, min_dist, rng, k=30):
                             return False
         return True
 
-    first = min_corner + rng.random(3) * dims
+    first = min_corner + np.array([rng.random(), rng.random(), rng.random()], dtype=np.float64) * dims
     samples.append(first)
     active.append(0)
     grid[grid_coords(first)] = 0
