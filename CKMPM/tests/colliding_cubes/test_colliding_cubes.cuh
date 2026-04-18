@@ -56,7 +56,7 @@ public:
     // ── material ──────────────────────────────────────────────────────────────
     constexpr static float kDx_ = 1.0f / 64.f;
     constexpr static auto  kConstitutiveModel_ = MPMConstitutiveModel::kFixedCorotated;
-    constexpr static float kE_      = 1e4f;
+    constexpr static float kE_      = 1e3f;
     constexpr static float kNu_     = 0.4f;
     constexpr static float kLambda_ = ComputeLameParameters<float>(kE_, kNu_)[0];
     constexpr static float kMu_     = ComputeLameParameters<float>(kE_, kNu_)[1];
