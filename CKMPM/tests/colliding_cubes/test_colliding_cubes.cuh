@@ -56,7 +56,7 @@ public:
     // ── material ──────────────────────────────────────────────────────────────
     constexpr static float kDx_ = 1.0f / 64.f;
     constexpr static auto  kConstitutiveModel_ = MPMConstitutiveModel::kFixedCorotated;
-    constexpr static float kE_      = 1e2f;
+    constexpr static float kE_      = 1e4f;
     constexpr static float kNu_     = 0.4f;
     constexpr static float kLambda_ = ComputeLameParameters<float>(kE_, kNu_)[0];
     constexpr static float kMu_     = ComputeLameParameters<float>(kE_, kNu_)[1];
@@ -74,7 +74,7 @@ public:
     constexpr static uint32_t kFps_              = 48;
     constexpr static float    kCfl_              = 0.5f;
     constexpr static float    kDtFactor_         = 1.0f;
-    constexpr static float    kTotalSimulatedTime_ = 3.0f;   // 3 s → 144 frames
+    constexpr static float    kTotalSimulatedTime_ = 5.0f;  
 
     // ── grid / domain ─────────────────────────────────────────────────────────
     // dx=1/64, block_size=4 → cells per dim = blocks×4
