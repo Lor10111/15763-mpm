@@ -33,6 +33,9 @@ import sys
 import argparse
 import struct
 import numpy as np
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
 
 # ── physical constants (must match test_colliding_cubes.cuh) ──────────────────
 DX             = 1.0 / 64.0
@@ -129,7 +132,7 @@ def main():
     px1     = (d1[:, 7] * pm).astype(np.float64)
     px_tot  = px0 + px1
 
-    # ── save ──────────────────────────────────────────────────────────────────
+    # ── save .npz ─────────────────────────────────────────────────────────────
     os.makedirs(out_dir, exist_ok=True)
     np.savez(out_npz, times=times, px0=px0, px1=px1, px_total=px_tot)
 
@@ -137,6 +140,29 @@ def main():
     print(f"[ckmpm] particle_mass used = {pm:.6e} kg")
     print(f"[ckmpm] |Δp_total|_max = {float(np.max(np.abs(px_tot))):.4e} kg·m/s")
     print(f"[ckmpm] Saved → {out_npz}")
+
+    # ── plot ──────────────────────────────────────────────────────────────────
+    out_png = out_npz.replace(".npz", ".png")
+    drift   = float(np.max(np.abs(px_tot)))
+
+    fig, ax = plt.subplots(figsize=(8, 4))
+    ax.plot(times, px0,    lw=1.5, color="#e74c3c", label="Cube 0")
+    ax.plot(times, px1,    lw=1.5, color="#f39c12", label="Cube 1")
+    ax.plot(times, px_tot, lw=1.5, color="#2980b9", label="Total")
+    ax.axhline(0, color="k", ls="--", lw=0.8)
+    ax.text(0.97, 0.05, f"|Δp_total|_max = {drift:.2e} kg·m/s",
+            transform=ax.transAxes, ha="right", va="bottom",
+            fontsize=8, color="#2980b9",
+            bbox=dict(boxstyle="round,pad=0.2", fc="white", ec="#2980b9", alpha=0.7))
+    ax.set_xlabel("Time (s)")
+    ax.set_ylabel("X-Component of Linear Momentum\n(kg · m/s)")
+    ax.set_title("Linear Momentum Conservation – CKMPM, Colliding Cubes")
+    ax.legend()
+    ax.grid(True, alpha=0.3)
+    fig.tight_layout()
+    fig.savefig(out_png, dpi=120)
+    plt.close(fig)
+    print(f"[ckmpm] momentum plot saved → {out_png}")
 
     # ── quick sanity print ────────────────────────────────────────────────────
     print(f"\n  Frame  |  t (s)   |  px0 (kg·m/s)  |  px1 (kg·m/s)  |  px_total")

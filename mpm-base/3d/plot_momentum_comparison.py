@@ -29,16 +29,51 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-OUT_DIR = os.path.join(os.path.dirname(__file__), "output")
+HERE = os.path.dirname(os.path.abspath(__file__))
+OUT_DIR = os.path.join(HERE, "output")
 OUT_FIG = os.path.join(OUT_DIR, "colliding_cubes_momentum_comparison.png")
 
+def first_existing_path(candidates):
+    for path in candidates:
+        if os.path.isfile(path):
+            return path
+    return None
+
+
 SOURCES = [
-    ("CKMPM",     os.path.join(OUT_DIR, "colliding_cubes_momentum_ckmpm.npz"),    "#8e44ad"),
-    ("MLS-MPM",   os.path.join(OUT_DIR, "colliding_cubes_momentum_mlsmpm.npz"),   "#27ae60"),
-    ("Basic MPM", os.path.join(OUT_DIR, "colliding_cubes_momentum_basic.npz"),    "#e67e22"),
+    (
+        "CKMPM",
+        [
+            os.path.join(OUT_DIR, "colliding_cubes_momentum_ckmpm.npz"),
+        ],
+        "#8e44ad",
+    ),
+    (
+        "MLS-MPM",
+        [
+            os.path.join(OUT_DIR, "colliding_cubes_momentum_mlsmpm.npz"),
+            os.path.normpath(
+                os.path.join(HERE, "..", "..", "MLS_MPM_clone", "tests", "output",
+                             "colliding_cubes_momentum_mlsmpm.npz")
+            ),
+        ],
+        "#27ae60",
+    ),
+    (
+        "Basic MPM",
+        [
+            os.path.join(OUT_DIR, "colliding_cubes_momentum_basic.npz"),
+        ],
+        "#e67e22",
+    ),
 ]
 
-available = [(label, path, color) for label, path, color in SOURCES if os.path.isfile(path)]
+available = []
+for label, candidates, color in SOURCES:
+    path = first_existing_path(candidates)
+    if path is not None:
+        available.append((label, path, color))
+
 if not available:
     raise FileNotFoundError(
         "No momentum .npz files found in output/.\n"

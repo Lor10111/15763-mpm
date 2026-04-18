@@ -42,6 +42,7 @@ ti.init(arch=ti.cpu)   # swap to ti.gpu / ti.metal for faster execution
 OUT_DIR = os.path.join(os.path.dirname(__file__), "output")
 OUT_GIF = os.path.join(OUT_DIR, "dual_rotation_basic3d.gif")
 OUT_LZ  = os.path.join(OUT_DIR, "dual_rotation_Lz_basic3d.png")
+OUT_NPZ = os.path.join(OUT_DIR, "dual_rotation_Lz_basic3d.npz")
 os.makedirs(OUT_DIR, exist_ok=True)
 
 # ── Shared parameters ─────────────────────────────────────────────────────────
@@ -263,18 +264,22 @@ total_frames    = int(round(total_time * fps))
 
 print(f"[basic3d-dual-rot]  steps_per_frame={steps_per_frame}  total_frames={total_frames}")
 
-frames_0   = []   # cube 1 positions per output frame
-frames_1   = []   # cube 2 positions per output frame
-Lz_history = []   # total L_z per output frame
+frames_0    = []   # cube 1 positions per output frame
+frames_1    = []   # cube 2 positions per output frame
+Lz0_history = []   # L_z of cube 0 (+ω) per frame
+Lz1_history = []   # L_z of cube 1 (−ω) per frame
 
 def record():
-    pts = x.to_numpy()          # shape (N, 3)
+    pts  = x.to_numpy()          # shape (N, 3)
     vels = v.to_numpy()
     frames_0.append(pts[:n0].copy())
     frames_1.append(pts[n0:].copy())
-    r   = pts - domain_center
-    Lz  = float(particle_mass * np.sum(r[:, 0] * vels[:, 1] - r[:, 1] * vels[:, 0]))
-    Lz_history.append(Lz)
+    r0  = pts[:n0] - domain_center
+    r1  = pts[n0:] - domain_center
+    Lz0 = float(particle_mass * np.sum(r0[:, 0] * vels[:n0, 1] - r0[:, 1] * vels[:n0, 0]))
+    Lz1 = float(particle_mass * np.sum(r1[:, 0] * vels[n0:, 1] - r1[:, 1] * vels[n0:, 0]))
+    Lz0_history.append(Lz0)
+    Lz1_history.append(Lz1)
 
 record()   # frame 0 = initial state
 
@@ -282,10 +287,12 @@ for frame in range(1, total_frames + 1):
     for _ in range(steps_per_frame):
         step()
     record()
-    Lz = Lz_history[-1]
     if frame % 12 == 0:
+        Lz_tot = Lz0_history[-1] + Lz1_history[-1]
         print(f"  Frame {frame:4d}/{total_frames}  "
-              f"t={frame / fps:.3f}s  L_z={Lz:.4e}")
+              f"t={frame / fps:.3f}s  "
+              f"Lz0={Lz0_history[-1]:.4e}  Lz1={Lz1_history[-1]:.4e}  "
+              f"Lz_tot={Lz_tot:.4e}")
 
 print(f"[basic3d-dual-rot]  simulation done, rendering …")
 
@@ -319,19 +326,31 @@ print(f"[basic3d-dual-rot]  GIF saved → {OUT_GIF}")
 
 
 # ── Angular momentum plot ─────────────────────────────────────────────────────
-times  = np.arange(len(Lz_history)) / fps
-Lz_arr = np.array(Lz_history)
+times   = np.arange(len(Lz0_history)) / fps
+Lz0_arr = np.array(Lz0_history)
+Lz1_arr = np.array(Lz1_history)
+Lz_tot  = Lz0_arr + Lz1_arr
 
 fig2, ax2 = plt.subplots(figsize=(8, 4))
-ax2.plot(times, Lz_arr, lw=1.5, color="#e67e22", label="L_z (total)")
-ax2.axhline(0, color="k", ls="--", lw=0.8, label="L_z = 0")
+ax2.plot(times, Lz0_arr, lw=1.5, color="#e74c3c", label="Cube 0 (+ω)")
+ax2.plot(times, Lz1_arr, lw=1.5, color="#f39c12", label="Cube 1 (−ω)")
+ax2.plot(times, Lz_tot,  lw=1.5, color="#2980b9", label="Total")
+ax2.axhline(0, color="k", ls="--", lw=0.8)
+drift = float(np.max(np.abs(Lz_tot)))
+ax2.text(0.97, 0.05, f"|ΔL_total|_max = {drift:.2e} kg·m²/s",
+         transform=ax2.transAxes, ha="right", va="bottom",
+         fontsize=8, color="#2980b9",
+         bbox=dict(boxstyle="round,pad=0.2", fc="white", ec="#2980b9", alpha=0.7))
 ax2.set_xlabel("Time (s)")
 ax2.set_ylabel("L_z  (kg·m²/s)")
-ax2.set_title("Total Angular Momentum Conservation – Basic MPM 3D, Dual Rotation")
+ax2.set_title("Angular Momentum Conservation – Basic MPM 3D, Dual Rotation")
 ax2.legend(); ax2.grid(True, alpha=0.3)
 fig2.tight_layout()
 fig2.savefig(OUT_LZ, dpi=120)
 plt.close(fig2)
 print(f"[basic3d-dual-rot]  L_z plot saved → {OUT_LZ}")
-print(f"[basic3d-dual-rot]  L_z: mean={Lz_arr.mean():.4e}  std={Lz_arr.std():.4e}  "
-      f"max|L_z|={np.abs(Lz_arr).max():.4e}")
+
+np.savez(OUT_NPZ, times=times, Lz0=Lz0_arr, Lz1=Lz1_arr, Lz_total=Lz_tot)
+print(f"[basic3d-dual-rot]  L_z data saved → {OUT_NPZ}")
+print(f"[basic3d-dual-rot]  Lz0: init={Lz0_arr[0]:.4e}  final={Lz0_arr[-1]:.4e}  "
+      f"decay={100*(1-abs(Lz0_arr[-1]/Lz0_arr[0])):.1f}%")
