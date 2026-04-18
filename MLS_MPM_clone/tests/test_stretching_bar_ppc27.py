@@ -32,7 +32,7 @@ CFL        = 0.5
 FPS        = 48
 TOTAL_TIME = 5.0
 V_STRETCH  = 0.02   # m/s per end (top +z, bot −z)
-PPC        = 8
+PPC        = 27
 
 C_S           = ((E * (1 - NU)) / ((1 + NU) * (1 - 2*NU) * DENSITY)) ** 0.5
 DT            = CFL * DX / C_S
@@ -40,8 +40,8 @@ PARTICLE_VOL  = DX**3 / PPC
 PARTICLE_MASS = PARTICLE_VOL * DENSITY
 
 OUT_DIR  = os.path.join(os.path.dirname(__file__), "output")
-OUT_GIF  = os.path.join(OUT_DIR, "stretching_bar_mlsmpm.gif")
-OUT_PLOT = os.path.join(OUT_DIR, "stretching_bar_length_mlsmpm.png")
+OUT_GIF  = os.path.join(OUT_DIR, "stretching_bar_mlsmpm_ppc27.gif")
+OUT_PLOT = os.path.join(OUT_DIR, "stretching_bar_length_mlsmpm_ppc27.png")
 os.makedirs(OUT_DIR, exist_ok=True)
 
 print(f"[mlsmpm-stretch]  dx={DX:.4e}  c_s={C_S:.4f}  dt={DT:.4e}")
@@ -57,12 +57,12 @@ pos_list, col_list = [], []
 for i in range(X_LO, X_HI):
     for j in range(Y_LO, Y_HI):
         for k in range(Z_LO, Z_HI):
-            for di in range(2):
-                for dj in range(2):
-                    for dk in range(2):
-                        pos_list.append([(i + 0.25 + di*0.5)*DX,
-                                         (j + 0.25 + dj*0.5)*DX,
-                                         (k + 0.25 + dk*0.5)*DX])
+            for di in range(3):
+                for dj in range(3):
+                    for dk in range(3):
+                        pos_list.append([(i + (di + 0.5)/3.0)*DX,
+                                         (j + (dj + 0.5)/3.0)*DX,
+                                         (k + (dk + 0.5)/3.0)*DX])
                         col_list.append((k - Z_LO) / (Z_HI - Z_LO))
 
 all_pos = np.array(pos_list, dtype=np.float32)

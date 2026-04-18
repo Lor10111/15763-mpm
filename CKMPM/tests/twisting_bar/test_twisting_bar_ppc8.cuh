@@ -1,0 +1,214 @@
+#pragma once
+
+#include "mpm_test_base.h"
+#include "mpm_material.cuh"
+#include "mpm_model.h"
+#include "mpm_domain.h"
+#include "mpm_engine.cuh"
+#include "data_type.cuh"
+#include "mpm_config.h"
+
+#include <array>
+#include <vector>
+#include <filesystem>
+#include <fstream>
+#include <string>
+#include <string_view>
+
+
+
+
+namespace mpm
+{
+namespace test{
+
+    class MPMTestScene
+    {
+    public:
+        constexpr static std::string_view kTestName_ = "twisting_bar_ppc8";
+
+        constexpr static float kDx_ = 1.0f / 256.0f;
+        constexpr static auto kConstitutiveModel_ = MPMConstitutiveModel::kFixedCorotated;
+        constexpr static float kE_ = 1e2;
+        constexpr static float kNu_ = 0.4f;
+        constexpr static float kLambda_ = ComputeLameParameters<float>(kE_, kNu_)[0];
+        constexpr static float kMu_ = ComputeLameParameters<float>(kE_, kNu_)[1];
+
+        constexpr static auto kMaterial_ = MPMMaterial<kConstitutiveModel_>{ MPMMaterial<kConstitutiveModel_>::FixedCorotatedMaterialParameter{kLambda_, kMu_} };
+
+        constexpr static float kRho_ = 2;
+        constexpr static float kParticlePerCell_ = 8.0f;
+        constexpr static int kParticlePerDimenion_ = 3;
+        constexpr static float kParticleVolume_ = kDx_ * kDx_ * kDx_ / 8.0f;
+        constexpr static float kParticleMass_ = kParticleVolume_ * kRho_;
+
+        constexpr static uint32_t kFps_ = 48;
+        constexpr static float kCfl_ = 0.5f;
+        constexpr static float kDtFactor_= 1.0f;
+        constexpr static float kTotalSimulatedTime_ = 5.0f;
+
+        typedef MPMDomainRange<64, 64, 64> DomainRange_;
+        typedef MPMDomainOffset<0, 0, 0> DomainOffset_;
+        typedef MPMDomain<DomainRange_, DomainOffset_> Domain_;
+        typedef MPMGridConfig<Domain_> GridConfig_;
+
+
+        class MPMTestDragonConfig : public MPMConfigBase<MPMTestDragonConfig>
+        {
+           public:
+            friend class MPMConfigBase<MPMTestDragonConfig>;
+
+            constexpr MPMTestDragonConfig() = default;
+
+           protected:
+            constexpr MPM_FORCE_INLINE MPM_HOST_DEV_FUNC auto GetDxImpl() const -> float { return kDx_;}
+
+            constexpr MPM_FORCE_INLINE MPM_HOST_DEV_FUNC auto GetBlockVolumeImpl() const -> uint32_t { return 64; }
+
+            constexpr MPM_FORCE_INLINE MPM_HOST_DEV_FUNC auto GetBlockSizeImpl() const -> uint32_t { return 4; }
+
+            constexpr MPM_FORCE_INLINE MPM_HOST_DEV_FUNC auto GetMaxParticleCountPerCellImpl() const -> uint32_t { return 64; }
+
+            constexpr MPM_FORCE_INLINE MPM_HOST_DEV_FUNC auto GetMaxParticleCountPerBlockImpl() const -> uint32_t
+            {
+                return GetBlockVolumeImpl() * GetMaxParticleCountPerCellImpl();
+            }
+
+            constexpr MPM_FORCE_INLINE MPM_HOST_DEV_FUNC auto GetMaxParticleCountPerBucketImpl() const -> uint32_t
+            {
+                return 32;
+            }
+
+            constexpr MPM_FORCE_INLINE MPM_HOST_DEV_FUNC auto GetMaxActiveBlockCountImpl() const -> uint32_t { return 30000; }
+
+            constexpr MPM_FORCE_INLINE MPM_HOST_DEV_FUNC auto GetFpsImpl() const -> uint32_t { return kFps_; }
+
+            constexpr MPM_FORCE_INLINE MPM_HOST_DEV_FUNC auto GetDtImpl() const -> float { return EvaluateTestTimestep(kDtFactor_, GetDxImpl(), kE_, kNu_, kRho_, kCfl_); }
+
+            constexpr MPM_FORCE_INLINE MPM_HOST_DEV_FUNC auto GetCflImpl() const -> float { return kCfl_; }
+
+            constexpr MPM_FORCE_INLINE MPM_HOST_DEV_FUNC auto GetTotalSimulatedFrameCountImpl() const -> uint32_t
+            {
+                return static_cast<uint32_t>(std::round(kTotalSimulatedTime_ * GetFpsImpl()));
+            }
+
+            constexpr MPM_FORCE_INLINE MPM_HOST_DEV_FUNC auto GetGravityImpl() const -> float
+            {
+                return 0.0f;
+            }
+
+            constexpr MPM_FORCE_INLINE MPM_HOST_DEV_FUNC auto GetMassClampImpl() const -> float
+            {
+                return 0.f;
+            }
+
+            constexpr MPM_FORCE_INLINE MPM_HOST_DEV_FUNC auto GetExistRigidParticleImpl() const -> bool
+            {
+                return false;
+            }
+
+            constexpr MPM_FORCE_INLINE MPM_HOST_DEV_FUNC auto GetRigidParticleCountImpl() const -> uint32_t
+            {
+                return 0;
+            }
+
+            template<typename Scalar>
+            constexpr MPM_FORCE_INLINE MPM_HOST_DEV_FUNC auto GetRigidParticleVelocityImpl() const -> Vector<Scalar, 3>
+            {
+                return Vector<Scalar, 3>{0.f, 0.f, 0.f};
+            }
+
+            constexpr MPM_FORCE_INLINE MPM_HOST_DEV_FUNC auto GetExistIrregularBoundaryImpl() const -> bool
+            {
+                return true;
+            }
+
+            MPM_FORCE_INLINE MPM_HOST_DEV_FUNC auto ProcessGridCellVelocityImpl(const Vector<int, 3>& cell, Vector<float, 3>& velocity, int frame) const -> void
+            {
+                bool inRange0 = (148 <= cell[2]) && (cell[2] < 168) && (cell[0] != 128) && (cell[1] != 128) && (cell[1] >= 100) && (100 <= cell[0]) && (cell[0] <= 150);
+                bool inRange1 = (88 <= cell[2]) && (cell[2] < 108) && (cell[0] != 128) && (cell[1] != 128) && (cell[1] >= 100) && (100 <= cell[0]) && (cell[0] <= 150);
+
+                bool isOutOfBound = (cell[0] < 8) || (cell[1] < 8) || (cell[2] < 8) || (cell[0] >= 248)  || (cell[1] >= 248) || (cell[2] >= 248);
+                const auto center = Vector<float, 3>{128, 128, 128} * kDx_;
+                const auto rotationAxis = Vector<float, 3>{0, 0, -1};
+                const float velocityFactor = 1.f;
+
+                if(inRange0)
+                {
+                    auto cellPos = cell * kDx_ - center;
+                    cellPos[2] = 0.f;
+                    float radius = cellPos.Norm();
+                    cellPos = cellPos / cellPos.Norm();
+                    velocity = Vector<float, 3>{cellPos[1]  * rotationAxis[2] - rotationAxis[1] * cellPos[2], cellPos[2] * rotationAxis[0] - rotationAxis[2] * cellPos[0], 0};
+                    velocity = velocityFactor * radius * velocity / velocity.Norm();
+                }
+
+                if(inRange1)
+                {
+                    auto cellPos = cell * kDx_ - center;
+                    cellPos[2] = 0.f;
+                    float radius = cellPos.Norm();
+                    cellPos = cellPos / cellPos.Norm();
+                    velocity = Vector<float, 3>{-cellPos[1]  * rotationAxis[2] + rotationAxis[1] * cellPos[2], -cellPos[2] * rotationAxis[0] + rotationAxis[2] * cellPos[0], 0};
+                    velocity = velocityFactor * radius * velocity / velocity.Norm();
+                }
+
+                velocity[0] = isOutOfBound ? 0.f : velocity[0];
+                velocity[1] = isOutOfBound ? 0.f : velocity[1];
+                velocity[2] = isOutOfBound ? 0.f : velocity[2];
+
+                if(cell[1] <= 90 && velocity[1] > 0.f) velocity[1] = 0.f;
+
+                return;
+            }
+
+            MPM_FORCE_INLINE MPM_HOST_DEV_FUNC auto UpdateConfigImpl(float dt, int frame) -> void
+            {
+            }
+        };
+
+        typedef MPMTestDragonConfig TestConfig_;
+    };
+
+
+    auto SetupModel(uint32_t& particleCount) -> std::vector<MPMModelVariant>
+    {
+        std::vector<Vector<float, 3>> position;
+        std::vector<Vector<float, 3>> velocity;
+        velocity.emplace_back(Vector<float, 3>{0.f, 0.f, 0.f});
+
+        const int xLimit[2] = { 118, 138 };
+        const int yLimit[2] = { 118, 138 };
+        const int zLimit[2] = { 88, 168 };
+
+        for(int i = xLimit[0]; i < xLimit[1]; ++i)
+        {
+            for(int j = yLimit[0]; j < yLimit[1]; ++j)
+            {
+                for(int k = zLimit[0]; k < zLimit[1]; ++k)
+                {
+                    for(int di = 0; di < 2; ++di)
+                    {
+                        for(int dj = 0; dj < 2; ++dj)
+                        {
+                            for(int dk = 0; dk < 2; ++dk)
+                            {
+                                float px = (i + 0.25f + di * 0.5f) * MPMTestScene::kDx_;
+                                float py = (j + 0.25f + dj * 0.5f) * MPMTestScene::kDx_;
+                                float pz = (k + 0.25f + dk * 0.5f) * MPMTestScene::kDx_;
+                                position.emplace_back(Vector<float, 3>{px, py, pz});
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        particleCount = static_cast<uint32_t>(position.size());
+
+        return { MPMModel<std::decay_t<decltype(MPMTestScene::kMaterial_)>>{MPMTestScene::kParticleMass_, MPMTestScene::kParticleVolume_, position, velocity, MPMTestScene::kMaterial_} };
+    }
+
+}
+
+}
