@@ -286,8 +286,10 @@ total_time = 3.0
 particle_vol  = dx**3 / ppc
 particle_mass = particle_vol * density
 
-OUT_DIR = "output"
+OUT_DIR = os.path.join(os.path.dirname(__file__), "output")
 OUT_GIF = os.path.join(OUT_DIR, "colliding_cubes_basic.gif")
+OUT_MOM = os.path.join(OUT_DIR, "colliding_cubes_momentum_basic.png")
+OUT_NPZ = os.path.join(OUT_DIR, "colliding_cubes_momentum_basic.npz")
 os.makedirs(OUT_DIR, exist_ok=True)
 
 print(f"[basic3d] dx={dx:.4e} c_s={c_s:.3f} dt={dt:.4e}")
@@ -443,6 +445,8 @@ def step():
 def run_simulation():
     frames_0 = []
     frames_1 = []
+    px0_hist = []
+    px1_hist = []
 
     target_frame_dt = 1.0 / fps
     next_frame_time = 0.0
@@ -450,10 +454,12 @@ def run_simulation():
 
     def record():
         pos = x.to_numpy()
+        vel = v.to_numpy()
         frames_0.append(pos[:n0].copy())
         frames_1.append(pos[n0:].copy())
+        px0_hist.append(float(particle_mass * vel[:n0, 0].sum()))
+        px1_hist.append(float(particle_mass * vel[n0:, 0].sum()))
 
-    # record initial frame at t = 0
     record()
     next_frame_time += target_frame_dt
 
@@ -466,7 +472,7 @@ def run_simulation():
             next_frame_time += target_frame_dt
 
     print(f"[basic3d] captured {len(frames_0)} frames")
-    return frames_0, frames_1
+    return frames_0, frames_1, px0_hist, px1_hist
 
 # ── offline gif rendering ─────────────────────────────────────────────────────
 def render_gif(frames_0, frames_1):
@@ -511,8 +517,30 @@ def render_gif(frames_0, frames_1):
     ani.save(OUT_GIF, writer="pillow", fps=fps, dpi=100)
     plt.close(fig)
 
+def plot_momentum(px0_hist, px1_hist):
+    times = np.arange(len(px0_hist)) / fps
+    px_total = np.array(px0_hist) + np.array(px1_hist)
+    fig, ax = plt.subplots(figsize=(8, 4))
+    ax.plot(times, px0_hist, lw=1.5, color="#e74c3c", label="Cube 0")
+    ax.plot(times, px1_hist, lw=1.5, color="#f39c12", label="Cube 1")
+    ax.plot(times, px_total, lw=1.5, color="#2980b9", label="Total")
+    ax.axhline(0, color="k", ls="--", lw=0.8)
+    ax.set_xlabel("Time (s)")
+    ax.set_ylabel("X-Component of Linear Momentum\n(kg · m/s)")
+    ax.set_title("Linear Momentum Conservation – Basic MPM, Colliding Cubes")
+    ax.legend()
+    ax.grid(True, alpha=0.3)
+    fig.tight_layout()
+    fig.savefig(OUT_MOM, dpi=120)
+    plt.close(fig)
+    print(f"[basic3d] momentum plot saved → {OUT_MOM}")
+    np.savez(OUT_NPZ, times=times, px0=px0_hist, px1=px1_hist, px_total=px_total)
+    print(f"[basic3d] momentum data saved → {OUT_NPZ}")
+
+
 if __name__ == "__main__":
-    frames_0, frames_1 = run_simulation()
-    print(f"[basic3d] simulation done, rendering GIF -> {OUT_GIF}")
+    frames_0, frames_1, px0_hist, px1_hist = run_simulation()
+    print(f"[basic3d] simulation done, rendering …")
     render_gif(frames_0, frames_1)
-    print(f"[basic3d] GIF saved -> {OUT_GIF}")
+    plot_momentum(px0_hist, px1_hist)
+    print(f"[basic3d] done.")

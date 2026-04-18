@@ -1,0 +1,11 @@
+Warp 1.12.1 initialized:
+   CUDA not enabled in this build
+   Devices:
+     "cpu"      : "arm"
+   Kernel cache:
+     /Users/lelinw/Library/Caches/warp/1.12.1
+[mlsmpm] grid_size=64 dx=1.5625e-02 dt=1.6877e-04 total_time=3.000
+[mlsmpm] particle_vol=1.413e-07 particle_mass=1.413e-04
+Module mpm_pytorch.constitutive_models.warp_svd.svd 35b1339 load on device 'cpu' took 8.68 ms  (cached)
+[mlsmpm] simulation done, rendering 3D GIF -> /Users/lelinw/Desktop/15763-mpm/MLS_MPM_clone/tests/output/colliding_cubes.gif
+[mlsmpm] GIF saved -> /Users/lelinw/Desktop/15763-mpm/MLS_MPM_clone/tests/output/colliding_cubes.gif

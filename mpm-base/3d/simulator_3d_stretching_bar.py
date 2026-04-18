@@ -226,7 +226,7 @@ ax  = fig.add_subplot(111, projection="3d")
 ax.set_xlim(0.35, 0.65); ax.set_ylim(0.35, 0.65); ax.set_zlim(0.1, 0.9)
 ax.set_xlabel("x"); ax.set_ylabel("y"); ax.set_zlabel("z")
 ax.set_title("Stretching Bar – Basic MPM 3D  (quadratic kernel, ppc=8)")
-ax.view_init(elev=10, azim=0)   # side view to see elongation clearly
+ax.view_init(elev=20, azim=-65)   # side view to see elongation clearly
 
 pts0 = frames_pos[0]
 scat = ax.scatter(pts0[:,0], pts0[:,1], pts0[:,2],

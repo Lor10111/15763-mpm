@@ -33,8 +33,10 @@ DT = CFL * DX / C_S
 PARTICLE_VOL = DX ** 3 / PPC
 PARTICLE_MASS = PARTICLE_VOL * DENSITY
 
-OUT_DIR = os.path.join(os.path.dirname(__file__), "output")
-OUT_GIF = os.path.join(OUT_DIR, "colliding_cubes.gif")
+OUT_DIR  = os.path.join(os.path.dirname(__file__), "output")
+OUT_GIF  = os.path.join(OUT_DIR, "colliding_cubes_mlsmpm.gif")
+OUT_MOM  = os.path.join(OUT_DIR, "colliding_cubes_momentum_mlsmpm.png")
+OUT_NPZ  = os.path.join(OUT_DIR, "colliding_cubes_momentum_mlsmpm.npz")
 os.makedirs(OUT_DIR, exist_ok=True)
 
 
@@ -97,14 +99,19 @@ def run_simulation(device):
 
     frames_0 = []
     frames_1 = []
+    px0_hist = []   # x-momentum of cube 0 per frame
+    px1_hist = []   # x-momentum of cube 1 per frame
     target_frame_dt = 1.0 / FPS
     next_frame_time = 0.0
     sim_time = 0.0
 
     def record():
-        positions = x_t.detach().cpu().numpy()
-        frames_0.append(positions[:n0].copy())
-        frames_1.append(positions[n0:].copy())
+        pos = x_t.detach().cpu().numpy()
+        vel = v_t.detach().cpu().numpy()
+        frames_0.append(pos[:n0].copy())
+        frames_1.append(pos[n0:].copy())
+        px0_hist.append(float(PARTICLE_MASS * vel[:n0, 0].sum()))
+        px1_hist.append(float(PARTICLE_MASS * vel[n0:, 0].sum()))
 
     record()
     next_frame_time += target_frame_dt
@@ -119,7 +126,7 @@ def run_simulation(device):
             record()
             next_frame_time += target_frame_dt
 
-    return frames_0, frames_1
+    return frames_0, frames_1, px0_hist, px1_hist
 
 
 def render_gif(frames_0, frames_1):
@@ -161,11 +168,33 @@ def render_gif(frames_0, frames_1):
     plt.close(fig)
 
 
+def plot_momentum(px0_hist, px1_hist):
+    times = np.arange(len(px0_hist)) / FPS
+    px_total = np.array(px0_hist) + np.array(px1_hist)
+    fig, ax = plt.subplots(figsize=(8, 4))
+    ax.plot(times, px0_hist,  lw=1.5, color="#e74c3c", label="Cube 0")
+    ax.plot(times, px1_hist,  lw=1.5, color="#f39c12", label="Cube 1")
+    ax.plot(times, px_total,  lw=1.5, color="#2980b9", label="Total")
+    ax.axhline(0, color="k", ls="--", lw=0.8)
+    ax.set_xlabel("Time (s)")
+    ax.set_ylabel("X-Component of Linear Momentum\n(kg · m/s)")
+    ax.set_title("Linear Momentum Conservation – MLS-MPM, Colliding Cubes")
+    ax.legend()
+    ax.grid(True, alpha=0.3)
+    fig.tight_layout()
+    fig.savefig(OUT_MOM, dpi=120)
+    plt.close(fig)
+    print(f"[mlsmpm] momentum plot saved → {OUT_MOM}")
+    np.savez(OUT_NPZ, times=times, px0=px0_hist, px1=px1_hist, px_total=px_total)
+    print(f"[mlsmpm] momentum data saved → {OUT_NPZ}")
+
+
 if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"[mlsmpm] grid_size={GRID_SIZE} dx={DX:.4e} dt={DT:.4e} total_time={TOTAL_TIME:.3f}")
     print(f"[mlsmpm] particle_vol={PARTICLE_VOL:.3e} particle_mass={PARTICLE_MASS:.3e}")
-    frames_0, frames_1 = run_simulation(device)
-    print(f"[mlsmpm] simulation done, rendering 3D GIF -> {OUT_GIF}")
+    frames_0, frames_1, px0_hist, px1_hist = run_simulation(device)
+    print(f"[mlsmpm] simulation done, rendering …")
     render_gif(frames_0, frames_1)
-    print(f"[mlsmpm] GIF saved -> {OUT_GIF}")
+    plot_momentum(px0_hist, px1_hist)
+    print(f"[mlsmpm] done.")

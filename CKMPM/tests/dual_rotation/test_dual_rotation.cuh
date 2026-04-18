@@ -199,12 +199,6 @@ auto SetupModel(uint32_t& particleCount) -> std::vector<MPMModelVariant>
         }
     }
 
-    // ── 打印初始角动量：理论上 block0 + block1 ≈ 0 ───────────────────────
-    printf("Particle count per block : %zu\n", position[0].size());
-    printf("Block0 init angular momentum (z): %f\n", initAngularMomentum0[2]);
-    printf("Block1 init angular momentum (z): %f\n", initAngularMomentum1[2]);
-    printf("Total  init angular momentum (z): %f  (should be ~0)\n",
-           initAngularMomentum0[2] + initAngularMomentum1[2]);
 
     particleCount = static_cast<uint32_t>(position[0].size());
 

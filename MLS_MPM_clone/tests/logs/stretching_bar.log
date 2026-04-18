@@ -1,0 +1,23 @@
+Warp 1.12.1 initialized:
+   CUDA not enabled in this build
+   Devices:
+     "cpu"      : "arm"
+   Kernel cache:
+     /Users/lelinw/Library/Caches/warp/1.12.1
+[mlsmpm-stretch]  dx=1.5625e-02  c_s=10.3510  dt=7.5476e-04
+[mlsmpm-stretch]  particles: 13500
+[mlsmpm-stretch]  device=cpu
+Module mpm_pytorch.constitutive_models.warp_svd.svd 35b1339 load on device 'cpu' took 7.17 ms  (cached)
+  Frame   24/240  t=0.479s  bar_length=0.3265m
+  Frame   48/240  t=0.980s  bar_length=0.3465m
+  Frame   72/240  t=1.479s  bar_length=0.3665m
+  Frame   96/240  t=1.980s  bar_length=0.3866m
+  Frame  120/240  t=2.479s  bar_length=0.4065m
+  Frame  144/240  t=2.980s  bar_length=0.4265m
+  Frame  168/240  t=3.479s  bar_length=0.4465m
+  Frame  192/240  t=3.980s  bar_length=0.4663m
+  Frame  216/240  t=4.479s  bar_length=0.4849m
+  Frame  240/240  t=4.980s  bar_length=0.5020m
+[mlsmpm-stretch]  GIF → /Users/lelinw/Desktop/15763-mpm/MLS_MPM_clone/tests/output/stretching_bar_mlsmpm.gif
+[mlsmpm-stretch]  length plot → /Users/lelinw/Desktop/15763-mpm/MLS_MPM_clone/tests/output/stretching_bar_length_mlsmpm.png
+[mlsmpm-stretch]  final bar length: 0.5026 m  (initial: 0.3073 m, strain: 63.6%)

@@ -35,7 +35,7 @@ V_STRETCH  = 0.02   # m/s per end (top +z, bot −z)
 
 C_S           = ((E * (1 - NU)) / ((1 + NU) * (1 - 2*NU) * DENSITY)) ** 0.5
 DT            = CFL * DX / C_S
-PARTICLE_VOL  = DX**3 / 8
+PARTICLE_VOL  = DX**3 / 27
 PARTICLE_MASS = PARTICLE_VOL * DENSITY
 
 OUT_DIR  = os.path.join(os.path.dirname(__file__), "output")
@@ -56,12 +56,12 @@ pos_list, col_list = [], []
 for i in range(X_LO, X_HI):
     for j in range(Y_LO, Y_HI):
         for k in range(Z_LO, Z_HI):
-            for di in range(2):
-                for dj in range(2):
-                    for dk in range(2):
-                        pos_list.append([(i + 0.25 + di*0.5)*DX,
-                                         (j + 0.25 + dj*0.5)*DX,
-                                         (k + 0.25 + dk*0.5)*DX])
+            for di in range(3):
+                for dj in range(3):
+                    for dk in range(3):
+                        pos_list.append([(i + (di + 0.5)/3.0)*DX,
+                                         (j + (dj + 0.5)/3.0)*DX,
+                                         (k + (dk + 0.5)/3.0)*DX])
                         col_list.append((k - Z_LO) / (Z_HI - Z_LO))
 
 all_pos = np.array(pos_list, dtype=np.float32)
@@ -157,7 +157,7 @@ def render_gif(frames):
     ax.set_xlim(0.35, 0.65); ax.set_ylim(0.35, 0.65); ax.set_zlim(0.1, 0.9)
     ax.set_xlabel("x"); ax.set_ylabel("y"); ax.set_zlabel("z")
     ax.set_title("Stretching Bar – MLS-MPM")
-    ax.view_init(elev=10, azim=0)   # side view along y-axis
+    ax.view_init(elev=20.0, azim=-65.0)   # side view along y-axis
 
     pts0 = frames[0]
     scat = ax.scatter(pts0[:,0], pts0[:,1], pts0[:,2],

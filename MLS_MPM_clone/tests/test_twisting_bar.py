@@ -4,7 +4,7 @@
 #
 # Shared parameters (identical across CKMPM / MLS-MPM / Basic-MPM-3D):
 #   E=100 Pa, nu=0.4, rho=2 kg/m³  (matches CKMPM twisting_bar)
-#   omega=1.0 rad/s, ppc=8, CFL=0.5, fps=48, total_time=5.0 s, gravity=0
+#   omega=1.0 rad/s, ppc=27, CFL=0.5, fps=48, total_time=5.0 s, gravity=0
 #
 # Bar geometry (dx=1/64):
 #   x,y: cells [30,35)  →  5 cells = 0.078 m
@@ -41,7 +41,7 @@ OMEGA      = 1.0    # rad/s (each end, opposite signs)
 
 C_S           = ((E * (1 - NU)) / ((1 + NU) * (1 - 2*NU) * DENSITY)) ** 0.5
 DT            = CFL * DX / C_S
-PARTICLE_VOL  = DX**3 / 8       # ppc=8
+PARTICLE_VOL  = DX**3 / 27      # ppc=27
 PARTICLE_MASS = PARTICLE_VOL * DENSITY
 
 OUT_DIR = os.path.join(os.path.dirname(__file__), "output")
@@ -62,18 +62,18 @@ pos_list, col_list = [], []
 for i in range(X_LO, X_HI):
     for j in range(Y_LO, Y_HI):
         for k in range(Z_LO, Z_HI):
-            for di in range(2):
-                for dj in range(2):
-                    for dk in range(2):
-                        pos_list.append([(i + 0.25 + di*0.5)*DX,
-                                         (j + 0.25 + dj*0.5)*DX,
-                                         (k + 0.25 + dk*0.5)*DX])
+            for di in range(3):
+                for dj in range(3):
+                    for dk in range(3):
+                        pos_list.append([(i + (di + 0.5)/3.0)*DX,
+                                         (j + (dj + 0.5)/3.0)*DX,
+                                         (k + (dk + 0.5)/3.0)*DX])
                         col_list.append((k - Z_LO) / (Z_HI - Z_LO))  # colour by z
 
 all_pos = np.array(pos_list, dtype=np.float32)
 z_color = np.array(col_list, dtype=np.float32)
 N = len(all_pos)
-print(f"[mlsmpm-twist]  particles: {N}  (5×5×20×8 = 4000)")
+print(f"[mlsmpm-twist]  particles: {N}  (5×5×20×27 = 13500)")
 
 # ── Precompute Dirichlet BC: grid-node indices + prescribed velocities ─────────
 # grid_mv is flat: index = i*N²+j*N+k
@@ -162,7 +162,7 @@ def render(frames):
     ax  = fig.add_subplot(111, projection="3d")
     ax.set_xlim(0.35, 0.65); ax.set_ylim(0.35, 0.65); ax.set_zlim(0.25, 0.75)
     ax.set_xlabel("x"); ax.set_ylabel("y"); ax.set_zlabel("z")
-    ax.set_title("Twisting Bar – MLS-MPM  (quadratic kernel, ppc=8)")
+    ax.set_title("Twisting Bar – MLS-MPM  (quadratic kernel, ppc=27)")
     ax.view_init(elev=20, azim=45)
 
     pts0 = frames[0]

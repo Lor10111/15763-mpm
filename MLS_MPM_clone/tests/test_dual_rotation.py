@@ -183,11 +183,11 @@ def run_simulation(device):
 def render_gif(frames_0, frames_1):
     fig = plt.figure(figsize=(7.5, 7.0))
     ax  = fig.add_subplot(111, projection="3d")
-    ax.set_xlim(0.15, 0.85); ax.set_ylim(0.35, 0.65); ax.set_zlim(0.35, 0.65)
+    ax.set_xlim(0.25, 0.75); ax.set_ylim(0.25, 0.75); ax.set_zlim(0.25, 0.75)
     ax.set_xlabel("x [m]"); ax.set_ylabel("y [m]"); ax.set_zlabel("z [m]")
     ax.set_title("Dual Rotation – MLS-MPM (3D)")
-    ax.set_box_aspect((7, 3, 3))
-    ax.view_init(elev=20.0, azim=-60.0)
+    ax.set_box_aspect((3, 3, 3))
+    ax.view_init(elev=20.0, azim=-65.0)
 
     scat0 = ax.scatter([], [], [], s=1, c="#e74c3c", depthshade=False, label="Cube 1 (+ω)")
     scat1 = ax.scatter([], [], [], s=1, c="#2e86de", depthshade=False, label="Cube 2 (−ω)")

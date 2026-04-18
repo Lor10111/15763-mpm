@@ -1,0 +1,38 @@
+Warp 1.12.1 initialized:
+   CUDA not enabled in this build
+   Devices:
+     "cpu"      : "arm"
+   Kernel cache:
+     /Users/lelinw/Library/Caches/warp/1.12.1
+[mlsmpm-rot]  grid=64  dx=1.5625e-02  dt=1.6877e-04  c_s=46.2910
+[mlsmpm-rot]  particle_vol=1.4129e-07  particle_mass=1.4129e-04
+[mlsmpm-rot]  Cube0 init L_z = 1.830608e-02
+[mlsmpm-rot]  Cube1 init L_z = -1.830608e-02
+[mlsmpm-rot]  Total init L_z = 3.677058e-10  (should be ~0)
+[mlsmpm-rot]  Total particles: 39366  (n0=19683)
+[mlsmpm-rot]  device=cpu
+Module mpm_pytorch.constitutive_models.warp_svd.svd 35b1339 load on device 'cpu' took 6.39 ms  (cached)
+  Frame   12/240  t=0.229s  L_z=-5.0326e-07
+  Frame   24/240  t=0.479s  L_z=-8.8423e-07
+  Frame   36/240  t=0.729s  L_z=-1.0763e-06
+  Frame   48/240  t=0.979s  L_z=-1.3001e-06
+  Frame   60/240  t=1.229s  L_z=-1.4925e-06
+  Frame   72/240  t=1.479s  L_z=-1.5947e-06
+  Frame   84/240  t=1.729s  L_z=-1.5890e-06
+  Frame   96/240  t=1.979s  L_z=-1.7876e-06
+  Frame  108/240  t=2.229s  L_z=-2.1632e-06
+  Frame  120/240  t=2.479s  L_z=-2.5863e-06
+  Frame  132/240  t=2.729s  L_z=-2.9239e-06
+  Frame  144/240  t=2.979s  L_z=-3.2273e-06
+  Frame  156/240  t=3.229s  L_z=-3.9262e-06
+  Frame  168/240  t=3.479s  L_z=-5.5325e-06
+  Frame  180/240  t=3.729s  L_z=-5.9203e-06
+  Frame  192/240  t=3.979s  L_z=-6.3603e-06
+  Frame  204/240  t=4.229s  L_z=-6.9968e-06
+  Frame  216/240  t=4.479s  L_z=-7.4960e-06
+  Frame  228/240  t=4.729s  L_z=-7.9753e-06
+  Frame  240/240  t=4.979s  L_z=-8.6838e-06
+[mlsmpm-rot]  simulation done, rendering …
+[mlsmpm-rot]  GIF saved → /Users/lelinw/Desktop/15763-mpm/MLS_MPM_clone/tests/output/dual_rotation_mlsmpm.gif
+[mlsmpm-rot]  L_z plot saved → /Users/lelinw/Desktop/15763-mpm/MLS_MPM_clone/tests/output/dual_rotation_Lz_mlsmpm.png
+[mlsmpm-rot]  L_z: mean=-3.5190e-06  std=2.5520e-06  max|L_z|=8.7543e-06

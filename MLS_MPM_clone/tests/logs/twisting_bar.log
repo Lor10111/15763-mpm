@@ -1,0 +1,22 @@
+Warp 1.12.1 initialized:
+   CUDA not enabled in this build
+   Devices:
+     "cpu"      : "arm"
+   Kernel cache:
+     /Users/lelinw/Library/Caches/warp/1.12.1
+[mlsmpm-twist]  dx=1.5625e-02  c_s=10.3510  dt=7.5476e-04
+[mlsmpm-twist]  particle_vol=1.4129e-07  particle_mass=2.8257e-07
+[mlsmpm-twist]  particles: 13500  (5×5×20×27 = 13500)
+[mlsmpm-twist]  device=cpu
+Module mpm_pytorch.constitutive_models.warp_svd.svd 35b1339 load on device 'cpu' took 1.45 ms  (cached)
+  Frame   24/240  t=0.479s
+  Frame   48/240  t=0.980s
+  Frame   72/240  t=1.479s
+  Frame   96/240  t=1.980s
+  Frame  120/240  t=2.479s
+  Frame  144/240  t=2.980s
+  Frame  168/240  t=3.479s
+  Frame  192/240  t=3.980s
+  Frame  216/240  t=4.479s
+  Frame  240/240  t=4.980s
+[mlsmpm-twist]  GIF → /Users/lelinw/Desktop/15763-mpm/MLS_MPM_clone/tests/output/twisting_bar_mlsmpm.gif
