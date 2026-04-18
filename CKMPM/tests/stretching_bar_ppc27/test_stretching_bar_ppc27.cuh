@@ -88,8 +88,9 @@ public:
         }
 
         constexpr MPM_FORCE_INLINE MPM_HOST_DEV_FUNC auto GetMaxParticleCountPerBucketImpl() const -> uint32_t { return 32; }
-        // 5×5×20 格 bar: ceil(6/4)³ × 2 ≈ 54 blocks，留 3× 余量
-        constexpr MPM_FORCE_INLINE MPM_HOST_DEV_FUNC auto GetMaxActiveBlockCountImpl() const -> uint32_t { return 200; }
+        // PPC=27 increases occupied and neighbor blocks during initialization;
+        // keep a wider margin so the expanded active-neighbor set fits safely.
+        constexpr MPM_FORCE_INLINE MPM_HOST_DEV_FUNC auto GetMaxActiveBlockCountImpl() const -> uint32_t { return 400; }
         constexpr MPM_FORCE_INLINE MPM_HOST_DEV_FUNC auto GetFpsImpl() const -> uint32_t { return kFps_; }
 
         constexpr MPM_FORCE_INLINE MPM_HOST_DEV_FUNC auto GetDtImpl() const -> float
