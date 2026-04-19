@@ -102,11 +102,21 @@ else:  # snow — Stomakhin 2013
     SNOW_THETA_S = 0.0075
     SNOW_XI      = 10.0
 
-# dt sized by stiffest material (ice)
+# dt sized by stiffest material (ice).
+# CKMPM dual-grid + compact (sin/cos) kernel has SHARPER gradients than
+# the quadratic B-spline used by basic / MLS-MPM (max |grad| ≈ 2 instead
+# of 1), so the same velocity gradient generates ~2× more momentum per
+# step.  python_demo.py (the 3D reference) applies a 0.1 multiplier on
+# top of the CFL dt for exactly this reason — without it the very first
+# few hundred steps blow up: |grad_v| → huge → J hits the 0.05 clamp →
+# pressure spikes to K·(20^7.15) ≈ 1.7e14 → particle velocities Inf →
+# NaN poisons the whole field by frame 1.  We follow the reference.
 C_S_ICE      = ((ICE_E * (1.0 - ICE_NU)) /
                 ((1.0 + ICE_NU) * (1.0 - 2.0 * ICE_NU) * ICE_RHO)) ** 0.5
-DT           = CFL * DX / C_S_ICE
+DT           = 0.1 * CFL * DX / C_S_ICE        # ← matches python_demo.py:58
 PARTICLE_VOL = DX ** 2 / PPC
+PARTICLE_MASS_MIN = PARTICLE_VOL * 400.0       # snow_rho is the lightest material
+GRID_M_TOL = PARTICLE_MASS_MIN * 1e-8          # CKMPM ref uses this guard
 
 print(f"[ice2d/{MEDIUM}/ckmpm] dx={DX:.4e} dt={DT:.4e} grid={GRID_SIZE}")
 
@@ -221,8 +231,15 @@ def corotated_pf(Fp, lam, mu):
 
 @ti.func
 def fluid_pf_tait(J, C, K, gamma, viscosity):
-    """CKMPM-style fluid Kirchhoff stress (mpm_material.cuh:466)."""
-    Jc = ti.max(0.05, ti.min(20.0, J))
+    """CKMPM-style fluid Kirchhoff stress (mpm_material.cuh:466).
+
+    Tighter Jc clamp than basic/MLS-MPM:  basic uses [0.05, 20] but with
+    γ=7.15 hitting J=0.05 yields pressure = K·(20^7.15) ≈ 1.7e14 which
+    is enough to launch particles at 1e6 m/s in a single step.  Even
+    with the 10× smaller dt, the dual-grid scheme has a tighter usable
+    J window before positive feedback kicks in, so we clamp to [0.4, 2.5].
+    """
+    Jc = ti.max(0.4, ti.min(2.5, J))
     pressure = K * (ti.pow(Jc, -gamma) - 1.0)
     P = (C + C.transpose()) * viscosity
     P[0, 0] -= pressure
@@ -287,7 +304,12 @@ def p2g():
 @ti.kernel
 def update_grid():
     for i, j, w in grid_m:
-        if grid_m[i, j, w] > 0.0:
+        # Mass tolerance — divides only on physically meaningful nodes.
+        # python_demo.py uses `mass > particle_mass * 1e-8` for the same
+        # reason: dual-grid splits particle mass across two sub-grids, so
+        # individual sub-grid cells can hold sub-normal mass that produces
+        # Inf when dividing momentum by it.
+        if grid_m[i, j, w] > GRID_M_TOL:
             grid_v[i, j, w] /= grid_m[i, j, w]
             grid_v[i, j, w].y += DT * GRAVITY_Y
 
@@ -341,6 +363,11 @@ def g2p():
 
         v[p] = new_v
         F_new = (ti.Matrix.identity(float, 2) + DT * cov_v) @ F_p[p]
+        # Same safety F clamp MLS-MPM uses — keeps a single bad particle
+        # from poisoning the whole frame if it ever leaves its support.
+        for a in ti.static(range(2)):
+            for b in ti.static(range(2)):
+                F_new[a, b] = ti.max(-2.0, ti.min(2.0, F_new[a, b]))
 
         if mat_id[p] == MAT_MEDIUM:
             if ti.static(MEDIUM == "snow"):
@@ -354,11 +381,14 @@ def g2p():
                 Jp_p[p] = ti.max(0.6, ti.min(20.0, Jp_p[p]))
                 F_p[p] = U @ sig @ V.transpose()
             else:
-                # fluid: track J via trace, reset F to sqrt(J)*I
+                # fluid: track J via trace, reset F to sqrt(J)*I (preserves
+                # det(F)=J, matches MLS-MPM's fluid_F_reset).  Tighter J
+                # clamp [0.4, 2.5] matches fluid_pf_tait above.
                 C_fluid[p] = cov_v
                 J_new = J_p[p] + DT * cov_v.trace() * J_p[p]
-                J_p[p] = ti.max(0.05, ti.min(20.0, J_new))
-                F_p[p] = ti.Matrix.identity(float, 2)
+                J_p[p] = ti.max(0.4, ti.min(2.5, J_new))
+                sqrtJ = ti.sqrt(J_p[p])
+                F_p[p] = sqrtJ * ti.Matrix.identity(float, 2)
         else:
             F_p[p] = F_new
 
