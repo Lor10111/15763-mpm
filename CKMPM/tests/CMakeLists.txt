@@ -5,7 +5,7 @@
 set(MPM_SIMULATOR_SOURCE_FILE ${CMAKE_SOURCE_DIR}/src/cuda_util.cu)
 
 # Build all test cases
-set(MPM_TEST_CASES "twisting_bar;twisting_bar_ppc8;dual_rotation;dropping_block_sand;dropping_block_fluid;dropping_block_snow;colliding_cubes;stretching_bar;stretching_bar_ppc27;tasty_meal_water;filter_drop;waterfall_bottleneck;efficiency_benchmark")
+set(MPM_TEST_CASES "twisting_bar;twisting_bar_ppc8;dual_rotation;dropping_block_sand;dropping_block_fluid;dropping_block_snow;colliding_cubes;stretching_bar;stretching_bar_ppc27;filter_drop;waterfall_bottleneck;efficiency_benchmark")
 foreach(TEST_CASE_NAME ${MPM_TEST_CASES})
     message("Adding test case --- ${TEST_CASE_NAME}")
     set(TEST_TARGET_NAME mpm_test_${TEST_CASE_NAME})
