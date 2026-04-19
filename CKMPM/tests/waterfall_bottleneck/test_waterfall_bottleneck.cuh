@@ -59,7 +59,7 @@ public:
         constexpr MPM_FORCE_INLINE MPM_HOST_DEV_FUNC auto GetMaxParticleCountPerCellImpl()   const -> uint32_t { return 64; }
         constexpr MPM_FORCE_INLINE MPM_HOST_DEV_FUNC auto GetMaxParticleCountPerBlockImpl()  const -> uint32_t { return 64*64; }
         constexpr MPM_FORCE_INLINE MPM_HOST_DEV_FUNC auto GetMaxParticleCountPerBucketImpl() const -> uint32_t { return 32; }
-        constexpr MPM_FORCE_INLINE MPM_HOST_DEV_FUNC auto GetMaxActiveBlockCountImpl()       const -> uint32_t { return 15000; }
+        constexpr MPM_FORCE_INLINE MPM_HOST_DEV_FUNC auto GetMaxActiveBlockCountImpl()       const -> uint32_t { return 50000; }
         constexpr MPM_FORCE_INLINE MPM_HOST_DEV_FUNC auto GetFpsImpl()             const -> uint32_t { return kFps_; }
         constexpr MPM_FORCE_INLINE MPM_HOST_DEV_FUNC auto GetDtImpl()              const -> float    { return 5e-5f; }
         constexpr MPM_FORCE_INLINE MPM_HOST_DEV_FUNC auto GetCflImpl()             const -> float    { return kCfl_; }
