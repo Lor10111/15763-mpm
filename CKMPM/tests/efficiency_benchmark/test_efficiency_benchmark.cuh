@@ -80,8 +80,8 @@ public:
         MPM_FORCE_INLINE MPM_HOST_DEV_FUNC auto ProcessGridCellVelocityImpl(
             const Vector<int, 3>& cell, Vector<float, 3>& velocity) const -> void
         {
-            float wz = (cell[2] + 0.5f) * kDx_;
-            if (wz < 2.f * kDx_) { velocity[0]=0.f; velocity[1]=0.f; velocity[2]=0.f; }
+            float wy = (cell[1] + 0.5f) * kDx_;
+            if (wy < 2.f * kDx_) { velocity[0]=0.f; velocity[1]=0.f; velocity[2]=0.f; }
         }
 
         MPM_FORCE_INLINE MPM_HOST_DEV_FUNC auto UpdateConfigImpl(float dt, int frame) -> void {}
@@ -92,16 +92,17 @@ public:
 auto SetupModel(uint32_t& particleCount) -> std::vector<MPMModelVariant>
 {
     constexpr float kDx = MPMTestScene::kDx_;
-    // Block center (128,128,179), half-size (51,51,51)  →  ~0.40 x 0.40 x 0.40
-    constexpr int cx=128, cy=128, cz=179, hx=51, hy=51, hz=51;
+    // Block center (128,179,128), half-size (51,51,51)  →  ~0.40 x 0.40 x 0.40
+    // cy=179 → Y=0.70 (gravity is -Y in CKMPM)
+    constexpr int cx=128, cy=179, cz=128, hx=51, hy=51, hz=51;
     std::vector<Vector<float,3>> position, velocity;
     for (int i=cx-hx; i<=cx+hx; ++i)
     for (int j=cy-hy; j<=cy+hy; ++j)
     for (int k=cz-hz; k<=cz+hz; ++k)
     for (int w=0; w<8; ++w) {
         int di=(w&4)>>2, dj=(w&2)>>1, dk=w&1;
-        position.push_back({(i+0.25f+di*0.5f)*kDx, (j+0.25f+dj*0.5f)*kDx, (k+0.25f+dk*0.5f)*kDx});
-        velocity.push_back({0.f, 0.f, 0.f});
+        position.push_back(Vector<float,3>{(i+0.25f+di*0.5f)*kDx, (j+0.25f+dj*0.5f)*kDx, (k+0.25f+dk*0.5f)*kDx});
+        velocity.push_back(Vector<float,3>{0.f, 0.f, 0.f});
         ++particleCount;
     }
     printf("efficiency_benchmark: %u particles\n", particleCount);

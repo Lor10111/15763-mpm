@@ -81,16 +81,16 @@ public:
             constexpr float dx      = kDx_;
             constexpr float neckXLo = 0.38f;
             constexpr float neckXHi = 0.62f;
-            constexpr float zTop    = 0.35f;   // walls only below this height
+            constexpr float yTop    = 0.35f;   // walls only below this height (gravity = -Y)
 
             float wx = (cell[0] + 0.5f) * dx;
-            float wz = (cell[2] + 0.5f) * dx;
+            float wy = (cell[1] + 0.5f) * dx;
 
-            // Sticky floor
-            if (wz < 2.f * dx) { velocity[0]=0.f; velocity[1]=0.f; velocity[2]=0.f; return; }
+            // Sticky floor (Y direction)
+            if (wy < 2.f * dx) { velocity[0]=0.f; velocity[1]=0.f; velocity[2]=0.f; return; }
 
-            // Bottleneck walls (sticky): only active below zTop
-            if (wz < zTop) {
+            // Bottleneck walls (sticky): only active below yTop
+            if (wy < yTop) {
                 if (wx < neckXLo) { velocity[0] = fmaxf(velocity[0], 0.f); }  // left wall: cancel -X vel
                 if (wx > neckXHi) { velocity[0] = fminf(velocity[0], 0.f); }  // right wall: cancel +X vel
             }
@@ -104,16 +104,17 @@ public:
 auto SetupModel(uint32_t& particleCount) -> std::vector<MPMModelVariant>
 {
     constexpr float kDx = MPMTestScene::kDx_;
-    // Block center (128,128,222), half-size (70,70,13)
-    constexpr int cx=128, cy=128, cz=222, hx=70, hy=70, hz=13;
+    // Block center (128,222,128), half-size (70,13,70)
+    // cy=222 → Y=0.87 (gravity is -Y); thin in Y (hy=13), wide in X/Z (hx=hz=70)
+    constexpr int cx=128, cy=222, cz=128, hx=70, hy=13, hz=70;
     std::vector<Vector<float,3>> position, velocity;
     for (int i=cx-hx; i<=cx+hx; ++i)
     for (int j=cy-hy; j<=cy+hy; ++j)
     for (int k=cz-hz; k<=cz+hz; ++k)
     for (int w=0; w<8; ++w) {
         int di=(w&4)>>2, dj=(w&2)>>1, dk=w&1;
-        position.push_back({(i+0.25f+di*0.5f)*kDx, (j+0.25f+dj*0.5f)*kDx, (k+0.25f+dk*0.5f)*kDx});
-        velocity.push_back({0.f, 0.f, 0.f});
+        position.push_back(Vector<float,3>{(i+0.25f+di*0.5f)*kDx, (j+0.25f+dj*0.5f)*kDx, (k+0.25f+dk*0.5f)*kDx});
+        velocity.push_back(Vector<float,3>{0.f, 0.f, 0.f});
         ++particleCount;
     }
     printf("waterfall_bottleneck: %u particles\n", particleCount);

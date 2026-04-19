@@ -76,29 +76,30 @@ public:
         constexpr MPM_FORCE_INLINE MPM_HOST_DEV_FUNC auto GetExistIrregularBoundaryImpl() const -> bool { return false; }
 
         // Cylinder + floor collider applied every substep on each grid cell
+        // Gravity is -Y in CKMPM; cylinders are Z-aligned (horizontal), distance in XY plane
         MPM_FORCE_INLINE MPM_HOST_DEV_FUNC auto ProcessGridCellVelocityImpl(
             const Vector<int, 3>& cell, Vector<float, 3>& velocity) const -> void
         {
             constexpr float dx     = kDx_;
             constexpr float radius = 0.06f;
-            constexpr float cylZ   = 0.50f;
+            constexpr float cylY   = 0.50f;
             float wx = (cell[0] + 0.5f) * dx;
-            float wz = (cell[2] + 0.5f) * dx;
+            float wy = (cell[1] + 0.5f) * dx;
 
-            // Sticky floor
-            if (wz < 2.f * dx) { velocity[0]=0.f; velocity[1]=0.f; velocity[2]=0.f; return; }
+            // Sticky floor (Y direction)
+            if (wy < 2.f * dx) { velocity[0]=0.f; velocity[1]=0.f; velocity[2]=0.f; return; }
 
-            // 3 horizontal cylinders at X = 0.20, 0.50, 0.80
-            const float cx[3] = {0.20f, 0.50f, 0.80f};
+            // 3 Z-aligned cylinders at X = 0.20, 0.50, 0.80, Y = 0.50
+            const float cxArr[3] = {0.20f, 0.50f, 0.80f};
             for (int c = 0; c < 3; ++c) {
-                float ex    = wx - cx[c];
-                float ez    = wz - cylZ;
-                float dist2 = ex*ex + ez*ez;
+                float ex    = wx - cxArr[c];
+                float ey    = wy - cylY;
+                float dist2 = ex*ex + ey*ey;
                 if (dist2 < radius*radius && dist2 > 1e-12f) {
                     float dist = sqrtf(dist2);
-                    float nx = ex/dist, nz = ez/dist;
-                    float dot = velocity[0]*nx + velocity[2]*nz;
-                    if (dot < 0.f) { velocity[0] -= dot*nx; velocity[2] -= dot*nz; }
+                    float nx = ex/dist, ny = ey/dist;
+                    float dot = velocity[0]*nx + velocity[1]*ny;
+                    if (dot < 0.f) { velocity[0] -= dot*nx; velocity[1] -= dot*ny; }
                 }
             }
         }
@@ -111,16 +112,17 @@ public:
 auto SetupModel(uint32_t& particleCount) -> std::vector<MPMModelVariant>
 {
     constexpr float kDx = MPMTestScene::kDx_;
-    // Block center (128,128,205), half-size (51,51,18) in grid indices
-    constexpr int cx=128, cy=128, cz=205, hx=51, hy=51, hz=18;
+    // Block center (128,205,128), half-size (51,18,51) in grid indices
+    // cy=205 → Y=0.80 (gravity is -Y); thin in Y (hy=18), wide in X/Z (hx=hz=51)
+    constexpr int cx=128, cy=205, cz=128, hx=51, hy=18, hz=51;
     std::vector<Vector<float,3>> position, velocity;
     for (int i=cx-hx; i<=cx+hx; ++i)
     for (int j=cy-hy; j<=cy+hy; ++j)
     for (int k=cz-hz; k<=cz+hz; ++k)
     for (int w=0; w<8; ++w) {
         int di=(w&4)>>2, dj=(w&2)>>1, dk=w&1;
-        position.push_back({(i+0.25f+di*0.5f)*kDx, (j+0.25f+dj*0.5f)*kDx, (k+0.25f+dk*0.5f)*kDx});
-        velocity.push_back({0.f, 0.f, 0.f});
+        position.push_back(Vector<float,3>{(i+0.25f+di*0.5f)*kDx, (j+0.25f+dj*0.5f)*kDx, (k+0.25f+dk*0.5f)*kDx});
+        velocity.push_back(Vector<float,3>{0.f, 0.f, 0.f});
         ++particleCount;
     }
     printf("filter_drop: %u particles\n", particleCount);

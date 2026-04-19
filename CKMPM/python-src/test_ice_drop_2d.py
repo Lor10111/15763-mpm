@@ -233,13 +233,12 @@ def corotated_pf(Fp, lam, mu):
 def fluid_pf_tait(J, C, K, gamma, viscosity):
     """CKMPM-style fluid Kirchhoff stress (mpm_material.cuh:466).
 
-    Tighter Jc clamp than basic/MLS-MPM:  basic uses [0.05, 20] but with
-    γ=7.15 hitting J=0.05 yields pressure = K·(20^7.15) ≈ 1.7e14 which
-    is enough to launch particles at 1e6 m/s in a single step.  Even
-    with the 10× smaller dt, the dual-grid scheme has a tighter usable
-    J window before positive feedback kicks in, so we clamp to [0.4, 2.5].
+    Same wide [0.05, 20] J clamp as basic / MLS-MPM — kept identical so
+    the three solvers share the exact same fluid model.  With the 10×
+    smaller CKMPM dt, J should never reach the clamp endpoints in this
+    scenario; the clamp is only a NaN safety net.
     """
-    Jc = ti.max(0.4, ti.min(2.5, J))
+    Jc = ti.max(0.05, ti.min(20.0, J))
     pressure = K * (ti.pow(Jc, -gamma) - 1.0)
     P = (C + C.transpose()) * viscosity
     P[0, 0] -= pressure
@@ -382,11 +381,11 @@ def g2p():
                 F_p[p] = U @ sig @ V.transpose()
             else:
                 # fluid: track J via trace, reset F to sqrt(J)*I (preserves
-                # det(F)=J, matches MLS-MPM's fluid_F_reset).  Tighter J
-                # clamp [0.4, 2.5] matches fluid_pf_tait above.
+                # det(F)=J, matches MLS-MPM's fluid_F_reset).  J clamp
+                # [0.05, 20] kept identical to basic/MLS for fairness.
                 C_fluid[p] = cov_v
                 J_new = J_p[p] + DT * cov_v.trace() * J_p[p]
-                J_p[p] = ti.max(0.4, ti.min(2.5, J_new))
+                J_p[p] = ti.max(0.05, ti.min(20.0, J_new))
                 sqrtJ = ti.sqrt(J_p[p])
                 F_p[p] = sqrtJ * ti.Matrix.identity(float, 2)
         else:
