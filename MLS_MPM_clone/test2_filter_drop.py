@@ -109,13 +109,33 @@ def visualize(frames, export_path, c='blue', s=15, fps=24, cylinders=None):
 
 def save_energy_plot(energy_log, export_path):
     frames_arr = [e['frame'] for e in energy_log]
-    ke_arr     = [e['kinetic_energy'] for e in energy_log]
-    plt.figure(figsize=(7, 4))
-    plt.plot(frames_arr, ke_arr, label='Kinetic Energy')
-    plt.xlabel('Frame'); plt.ylabel('Energy (J)')
-    plt.title('Kinetic Energy over Time — Filter Drop Test')
-    plt.legend(); plt.tight_layout()
-    plt.savefig(export_path, dpi=120)
+    ke_arr     = [e['kinetic_energy']    for e in energy_log]
+    pe_arr     = [e['potential_energy']  for e in energy_log]
+    total_arr  = [e['total_energy']      for e in energy_log]
+
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(8, 7), sharex=True)
+
+    # Top: all three curves
+    ax1.plot(frames_arr, ke_arr,    label='Kinetic Energy (KE)',   color='steelblue')
+    ax1.plot(frames_arr, pe_arr,    label='Potential Energy (PE)',  color='darkorange', linestyle='--')
+    ax1.plot(frames_arr, total_arr, label='Total Energy (KE+PE)',   color='green', linewidth=2)
+    ax1.set_ylabel('Energy (J)')
+    ax1.set_title('Energy Conservation — Filter Drop Test\n'
+                  '(Total should plateau — decay = numerical dissipation)')
+    ax1.legend(fontsize=9); ax1.grid(alpha=0.3)
+
+    # Bottom: normalised total so dissipation rate is visible
+    e0 = total_arr[0] if total_arr[0] != 0 else 1.0
+    norm = [e / e0 for e in total_arr]
+    ax2.plot(frames_arr, norm, color='green', linewidth=1.5)
+    ax2.axhline(1.0, color='red', linestyle=':', alpha=0.5, label='Ideal (no dissipation)')
+    ax2.set_ylabel('Normalised Total\n(E / E₀)')
+    ax2.set_xlabel('Frame')
+    ax2.set_title('1.0 = perfect conservation, decay = numerical dissipation')
+    ax2.legend(fontsize=9); ax2.grid(alpha=0.3)
+
+    plt.tight_layout()
+    plt.savefig(export_path, dpi=130)
     plt.close()
     print(f'  Energy plot saved → {export_path}')
 
@@ -145,11 +165,11 @@ if __name__ == '__main__':
     particles = get_cube(
         center=[0.5, 0.5, 0.80],
         size=[0.40, 0.40, 0.14],
-        num=14, add_noise=True, device=device)
+        num=20, add_noise=True, device=device)
     n_particles = particles.shape[0]
     print(f'Particles: {n_particles}')
 
-    solver = MPMSolver(particles, enable_train=False, device=device)
+    solver = MPMSolver(particles, enable_train=False, num_grids=40, device=device)
     set_boundary_conditions(solver, sim.boundary_conditions)
 
     RADIUS = 0.06
@@ -178,8 +198,17 @@ if __name__ == '__main__':
 
     for frame in tqdm(range(sim.num_frames), desc='Simulating'):
         frames.append(x.cpu().numpy())
+        # KE = 0.5 * m * |v|^2  summed over all particles
         ke = 0.5 * solver.p_mass * (v ** 2).sum(dim=1).sum().item()
-        energy_log.append({'frame': frame, 'kinetic_energy': ke})
+        # PE = m * g * z  (gravity = 9.8 downward in Z)
+        g  = 9.8
+        pe = solver.p_mass * g * x[:, 2].sum().item()
+        energy_log.append({
+            'frame': frame,
+            'kinetic_energy':   ke,
+            'potential_energy': pe,
+            'total_energy':     ke + pe,
+        })
 
         for _ in range(sim.steps_per_frame):
             stress = elasticity(F)
@@ -196,6 +225,6 @@ if __name__ == '__main__':
     save_energy_plot(energy_log, energy_path)
 
     with open(csv_path, 'w', newline='') as f:
-        writer = csv.DictWriter(f, fieldnames=['frame', 'kinetic_energy'])
+        writer = csv.DictWriter(f, fieldnames=['frame', 'kinetic_energy', 'potential_energy', 'total_energy'])
         writer.writeheader(); writer.writerows(energy_log)
     print(f'  CSV saved → {csv_path}')
