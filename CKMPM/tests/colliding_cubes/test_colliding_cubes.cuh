@@ -12,6 +12,7 @@
 #include <vector>
 #include <filesystem>
 #include <fstream>
+#include <random>
 #include <string>
 #include <string_view>
 
@@ -160,7 +161,15 @@ auto SetupModel(uint32_t& particleCount) -> std::vector<MPMModelVariant>
     Vector<float, 3> vel0{ kV0, 0.f, 0.f};
     Vector<float, 3> vel1{-kV0, 0.f, 0.f};
 
-    // Loop i,j,k ∈ [−4,+4], 2×2×2 sub-cell → 9³×8 = 5832 particles per cube
+    // Loop i,j,k ∈ [−4,+4], 2×2×2 sub-cell → 9³×8 = 5832 particles per cube.
+    // Stratified jitter: each particle sits inside its 0.5×dx sub-cell at a
+    // random position (uniform in [0, 0.5)), breaking lattice correlation
+    // while preserving density. Independent jitter per cube (different seeds)
+    // so the two cubes are not mirror-identical.
+    std::mt19937 rng0(12345u);
+    std::mt19937 rng1(67890u);
+    std::uniform_real_distribution<float> jitter(0.0f, 0.5f);
+
     for (int i = -4; i <= 4; ++i)
     for (int j = -4; j <= 4; ++j)
     for (int k = -4; k <= 4; ++k)
@@ -170,14 +179,17 @@ auto SetupModel(uint32_t& particleCount) -> std::vector<MPMModelVariant>
         int dj = (w & 2) >> 1;
         int dk =  w & 1;
 
-        Vector<float, 3> offset{ i + 0.25f + di * 0.5f,
-                                  j + 0.25f + dj * 0.5f,
-                                  k + 0.25f + dk * 0.5f };
+        Vector<float, 3> offset0{ i + di * 0.5f + jitter(rng0),
+                                   j + dj * 0.5f + jitter(rng0),
+                                   k + dk * 0.5f + jitter(rng0) };
+        Vector<float, 3> offset1{ i + di * 0.5f + jitter(rng1),
+                                   j + dj * 0.5f + jitter(rng1),
+                                   k + dk * 0.5f + jitter(rng1) };
 
-        position[0].emplace_back(center0 + offset * kDx);
+        position[0].emplace_back(center0 + offset0 * kDx);
         velocity[0].emplace_back(vel0);
 
-        position[1].emplace_back(center1 + offset * kDx);
+        position[1].emplace_back(center1 + offset1 * kDx);
         velocity[1].emplace_back(vel1);
     }
 
