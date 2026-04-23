@@ -69,7 +69,9 @@ WATER_VISCO = 0.0  # isolate PIC/APIC transfer difference from explicit fluid vi
 # Ice: stiff Fixed Corotated — match CKMPM kIce* exactly
 # (the previous E=2e5 was ~50× too soft; ice would itself collapse on impact
 #  and inject huge grad_v into the water, breaking Tait stability.)
-ICE_RHO = 900.0
+ICE_RHO = 400.0  # lowered from 900 to boost buoyancy:weight ratio (0.1 -> 0.6)
+                 # so the restoring force dominates PIC's numerical dissipation
+                 # enough for the ice to visibly bob up and down.
 ICE_E = 1e7
 ICE_NU = 0.40
 ICE_MU = ICE_E / (2.0 * (1.0 + ICE_NU))
