@@ -36,7 +36,7 @@ OUT_NPZ = os.path.join(OUT_DIR, "ice_into_water_2d_basic_metrics.npz")
 os.makedirs(OUT_DIR, exist_ok=True)
 
 # Simulation
-GRID_SIZE = 1024
+GRID_SIZE = 2048
 DX = 1.0 / GRID_SIZE
 PPC = 4
 FPS = 48
