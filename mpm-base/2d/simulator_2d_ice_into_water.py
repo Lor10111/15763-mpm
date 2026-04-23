@@ -38,7 +38,7 @@ os.makedirs(OUT_DIR, exist_ok=True)
 # Simulation
 GRID_SIZE = 256
 DX = 1.0 / GRID_SIZE
-PPC = 4  # 2x2 sub-cell
+PPC = 16  # 4x4 stratified sub-cell (was 4 = 2x2)
 FPS = 48
 TOTAL_TIME = 2.5
 GRAVITY_Y = -9.8
@@ -82,14 +82,17 @@ PARTICLE_VOL = DX ** 2 / PPC
 print(f"[ice2d-water/basic] dx={DX:.4e} dt={DT:.4e} grid={GRID_SIZE}")
 
 
-def sub_offsets():
-    return [(0.25, 0.25), (0.25, 0.75), (0.75, 0.25), (0.75, 0.75)]
+SUB_N = 4  # 4x4 stratified grid -> 16 particles per cell
+SUB = [((i + 0.5) / SUB_N, (j + 0.5) / SUB_N)
+       for i in range(SUB_N) for j in range(SUB_N)]
 
 
-SUB = sub_offsets()
-
-
-def make_rect(x0, x1, y0, y1):
+def make_rect(x0, x1, y0, y1, seed=0):
+    # Stratified 4x4 sub-cell sampling with per-particle jitter inside its
+    # sub-cell (half-width = 0.5 / SUB_N). Breaks the lattice-aligned
+    # correlation between ice and water particles at the interface.
+    rng = np.random.default_rng(seed)
+    jitter_half = 0.5 / SUB_N
     pos = []
     i0 = int(x0 / DX) - 1
     i1 = int(x1 / DX) + 2
@@ -98,15 +101,17 @@ def make_rect(x0, x1, y0, y1):
     for i in range(i0, i1):
         for j in range(j0, j1):
             for ox, oy in SUB:
-                px = (i + ox) * DX
-                py = (j + oy) * DX
+                jx = rng.uniform(-jitter_half, jitter_half)
+                jy = rng.uniform(-jitter_half, jitter_half)
+                px = (i + ox + jx) * DX
+                py = (j + oy + jy) * DX
                 if x0 <= px <= x1 and y0 <= py <= y1:
                     pos.append((px, py))
     return np.asarray(pos, dtype=np.float32)
 
 
-water_pos = make_rect(WATER_X0, WATER_X1, WATER_Y0, WATER_Y1)
-ice_pos = make_rect(ICE_CX - ICE_HALF, ICE_CX + ICE_HALF, ICE_CY - ICE_HALF, ICE_CY + ICE_HALF)
+water_pos = make_rect(WATER_X0, WATER_X1, WATER_Y0, WATER_Y1, seed=1)
+ice_pos = make_rect(ICE_CX - ICE_HALF, ICE_CX + ICE_HALF, ICE_CY - ICE_HALF, ICE_CY + ICE_HALF, seed=2)
 
 n_water = len(water_pos)
 n_ice = len(ice_pos)
