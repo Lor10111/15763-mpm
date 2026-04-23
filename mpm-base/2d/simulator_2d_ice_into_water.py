@@ -61,7 +61,7 @@ MAT_ICE = 1
 WATER_RHO = 1000.0
 WATER_K = 5e4      # bulk modulus  (CKMPM kWaterBulk_)
 WATER_GAMMA = 7.15 # Tait exponent (CKMPM kWaterGamma_)
-WATER_VISCO = 0.1  # artificial viscosity (CKMPM kWaterVisco_)
+WATER_VISCO = 0.0  # artificial viscosity (CKMPM kWaterVisco_)
 
 # Ice: stiff Fixed Corotated — match CKMPM kIce* exactly
 ICE_RHO = 900.0
