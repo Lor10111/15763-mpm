@@ -35,26 +35,26 @@ OUT_COM = os.path.join(OUT_DIR, "ice_into_water_2d_basic_com.png")
 OUT_NPZ = os.path.join(OUT_DIR, "ice_into_water_2d_basic_metrics.npz")
 os.makedirs(OUT_DIR, exist_ok=True)
 
-# Simulation
-GRID_SIZE = 256
+# Simulation — coarser grid + shorter time = fewer PIC smoothing ops, which
+# is the single biggest knob for visible PIC dissipation (ops ∝ steps ∝ 1/dt).
+GRID_SIZE = 128
 DX = 1.0 / GRID_SIZE
-PPC = 16  # 4x4 stratified sub-cell (was 4 = 2x2)
+PPC = 16  # 4x4 stratified sub-cell
 FPS = 48
-TOTAL_TIME = 2.5
+TOTAL_TIME = 1.5
 GRAVITY_Y = -9.8
-CFL = 0.5  # match CKMPM tasty_meal_water (kCfl_ = 0.5)
+CFL = 0.5
 
-# Geometry — tuned to a surface-wave / bobbing regime so PIC's numerical
-# dissipation is less visually dominant (see notes in companion MLS-MPM
-# version). The original "heavy impact" params (0.04 / 0.62 / v=-1.2 /
-# water to 0.32) excited exactly the modes PIC smears worst.
+# Geometry — back to a dramatic impact scene (big ice, high drop, fast v0)
+# since stickiness is now fought by reducing total PIC step count instead
+# of softening the scene.
 BOX_X0, BOX_X1 = 0.20, 0.80
 BOX_Y0 = 0.10
 WATER_X0, WATER_X1 = 0.23, 0.77
-WATER_Y0, WATER_Y1 = 0.10, 0.38
-ICE_CX, ICE_CY = 0.50, 0.44
-ICE_HALF = 0.03
-ICE_V0 = (0.0, 0.0)
+WATER_Y0, WATER_Y1 = 0.10, 0.35
+ICE_CX, ICE_CY = 0.50, 0.75
+ICE_HALF = 0.06
+ICE_V0 = (0.0, -2.5)
 
 # Materials
 MAT_WATER = 0
@@ -69,10 +69,11 @@ WATER_VISCO = 0.0  # isolate PIC/APIC transfer difference from explicit fluid vi
 # Ice: stiff Fixed Corotated — match CKMPM kIce* exactly
 # (the previous E=2e5 was ~50× too soft; ice would itself collapse on impact
 #  and inject huge grad_v into the water, breaking Tait stability.)
-ICE_RHO = 400.0  # lowered from 900 to boost buoyancy:weight ratio (0.1 -> 0.6)
-                 # so the restoring force dominates PIC's numerical dissipation
-                 # enough for the ice to visibly bob up and down.
-ICE_E = 1e7
+ICE_RHO = 500.0  # half-density so buoyancy:weight ratio is 0.5
+                 # (dominant vs PIC damping, ice will clearly bob)
+ICE_E = 1e6      # 10x softer than CKMPM ice -- c_s drops by sqrt(10),
+                 # dt grows ~3.2x, total PIC step count drops accordingly.
+                 # Ice stays rigid enough visually to read as a solid block.
 ICE_NU = 0.40
 ICE_MU = ICE_E / (2.0 * (1.0 + ICE_NU))
 ICE_LAM = ICE_E * ICE_NU / ((1.0 + ICE_NU) * (1.0 - 2.0 * ICE_NU))
