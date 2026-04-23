@@ -44,14 +44,17 @@ TOTAL_TIME = 2.5
 GRAVITY_Y = -9.8
 CFL = 0.5  # match CKMPM tasty_meal_water (kCfl_ = 0.5)
 
-# Geometry
-BOX_X0, BOX_X1 = 0.25, 0.75
+# Geometry — tuned to a surface-wave / bobbing regime so PIC's numerical
+# dissipation is less visually dominant (see notes in companion MLS-MPM
+# version). The original "heavy impact" params (0.04 / 0.62 / v=-1.2 /
+# water to 0.32) excited exactly the modes PIC smears worst.
+BOX_X0, BOX_X1 = 0.20, 0.80
 BOX_Y0 = 0.10
-WATER_X0, WATER_X1 = 0.28, 0.72
-WATER_Y0, WATER_Y1 = 0.10, 0.32
-ICE_CX, ICE_CY = 0.50, 0.62
-ICE_HALF = 0.04
-ICE_V0 = (0.0, -1.2)
+WATER_X0, WATER_X1 = 0.23, 0.77
+WATER_Y0, WATER_Y1 = 0.10, 0.38
+ICE_CX, ICE_CY = 0.50, 0.44
+ICE_HALF = 0.03
+ICE_V0 = (0.0, 0.0)
 
 # Materials
 MAT_WATER = 0
