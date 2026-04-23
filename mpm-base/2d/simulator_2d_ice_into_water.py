@@ -27,7 +27,7 @@ import matplotlib.animation as animation
 import matplotlib.pyplot as plt
 import taichi as ti
 
-ti.init(arch=ti.cpu)
+ti.init(arch=ti.gpu)
 
 OUT_DIR = os.path.join(os.path.dirname(__file__), "output")
 OUT_GIF = os.path.join(OUT_DIR, "ice_into_water_2d_basic.gif")
