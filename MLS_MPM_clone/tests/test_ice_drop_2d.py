@@ -97,7 +97,7 @@ if MEDIUM == "water":
     MEDIUM_RHO        = 1000.0
     WATER_K           = 5e4
     WATER_GAMMA       = 7.15
-    WATER_VISCO       = 0.1
+    WATER_VISCO       = 0.0
     HONEY_VIS_FACTOR  = 1.0    # no damping
 elif MEDIUM == "honey":
     MEDIUM_RHO        = 1400.0

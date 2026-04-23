@@ -61,7 +61,7 @@ MAT_ICE = 1
 WATER_RHO = 1000.0
 WATER_K = 5e4      # bulk modulus  (CKMPM kWaterBulk_)
 WATER_GAMMA = 7.15 # Tait exponent (CKMPM kWaterGamma_)
-WATER_VISCO = 0.1  # artificial viscosity (CKMPM kWaterVisco_)
+WATER_VISCO = 0.0  # isolate PIC/APIC transfer difference from explicit fluid viscosity
 
 # Ice: stiff Fixed Corotated — match CKMPM kIce* exactly
 # (the previous E=2e5 was ~50× too soft; ice would itself collapse on impact
@@ -183,6 +183,13 @@ def particle_pf(p):
     return PF
 
 
+@ti.func
+def fluid_F_reset_from_J(J):
+    sqrtJ = ti.sqrt(ti.max(0.05, ti.min(20.0, J)))
+    I = ti.Matrix.identity(float, 2)
+    return sqrtJ * I
+
+
 @ti.kernel
 def reset_grid():
     for i, j in grid_m:
@@ -271,9 +278,11 @@ def g2p():
             C_f[p] = grad_v
             J_new = J_f[p] + DT * grad_v.trace() * J_f[p]
             J_f[p] = ti.max(0.05, ti.min(20.0, J_new))
-            F_f[p] = ti.Matrix.identity(float, 2)
+            F_f[p] = fluid_F_reset_from_J(J_f[p])
         else:
             F_f[p] = (ti.Matrix.identity(float, 2) + DT * grad_v) @ F_f[p]
+            for a, b in ti.static(ti.ndrange(2, 2)):
+                F_f[p][a, b] = ti.max(-2.0, ti.min(2.0, F_f[p][a, b]))
 
 
 @ti.kernel
