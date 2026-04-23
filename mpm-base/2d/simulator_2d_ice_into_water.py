@@ -35,26 +35,23 @@ OUT_COM = os.path.join(OUT_DIR, "ice_into_water_2d_basic_com.png")
 OUT_NPZ = os.path.join(OUT_DIR, "ice_into_water_2d_basic_metrics.npz")
 os.makedirs(OUT_DIR, exist_ok=True)
 
-# Simulation — coarser grid + shorter time = fewer PIC smoothing ops, which
-# is the single biggest knob for visible PIC dissipation (ops ∝ steps ∝ 1/dt).
-GRID_SIZE = 128
+# Simulation
+GRID_SIZE = 256
 DX = 1.0 / GRID_SIZE
-PPC = 16  # 4x4 stratified sub-cell
+PPC = 4  # 2x2 sub-cell
 FPS = 48
-TOTAL_TIME = 1.5
+TOTAL_TIME = 2.5
 GRAVITY_Y = -9.8
-CFL = 0.5
+CFL = 0.5  # match CKMPM tasty_meal_water (kCfl_ = 0.5)
 
-# Geometry — back to a dramatic impact scene (big ice, high drop, fast v0)
-# since stickiness is now fought by reducing total PIC step count instead
-# of softening the scene.
-BOX_X0, BOX_X1 = 0.20, 0.80
+# Geometry
+BOX_X0, BOX_X1 = 0.25, 0.75
 BOX_Y0 = 0.10
-WATER_X0, WATER_X1 = 0.23, 0.77
-WATER_Y0, WATER_Y1 = 0.10, 0.35
-ICE_CX, ICE_CY = 0.50, 0.75
-ICE_HALF = 0.06
-ICE_V0 = (0.0, -2.5)
+WATER_X0, WATER_X1 = 0.28, 0.72
+WATER_Y0, WATER_Y1 = 0.10, 0.32
+ICE_CX, ICE_CY = 0.50, 0.62
+ICE_HALF = 0.04
+ICE_V0 = (0.0, -1.2)
 
 # Materials
 MAT_WATER = 0
@@ -64,16 +61,11 @@ MAT_ICE = 1
 WATER_RHO = 1000.0
 WATER_K = 5e4      # bulk modulus  (CKMPM kWaterBulk_)
 WATER_GAMMA = 7.15 # Tait exponent (CKMPM kWaterGamma_)
-WATER_VISCO = 0.0  # isolate PIC/APIC transfer difference from explicit fluid viscosity
+WATER_VISCO = 0.1  # artificial viscosity (CKMPM kWaterVisco_)
 
 # Ice: stiff Fixed Corotated — match CKMPM kIce* exactly
-# (the previous E=2e5 was ~50× too soft; ice would itself collapse on impact
-#  and inject huge grad_v into the water, breaking Tait stability.)
-ICE_RHO = 500.0  # half-density so buoyancy:weight ratio is 0.5
-                 # (dominant vs PIC damping, ice will clearly bob)
-ICE_E = 1e6      # 10x softer than CKMPM ice -- c_s drops by sqrt(10),
-                 # dt grows ~3.2x, total PIC step count drops accordingly.
-                 # Ice stays rigid enough visually to read as a solid block.
+ICE_RHO = 900.0
+ICE_E = 1e7
 ICE_NU = 0.40
 ICE_MU = ICE_E / (2.0 * (1.0 + ICE_NU))
 ICE_LAM = ICE_E * ICE_NU / ((1.0 + ICE_NU) * (1.0 - 2.0 * ICE_NU))
@@ -88,17 +80,14 @@ PARTICLE_VOL = DX ** 2 / PPC
 print(f"[ice2d-water/basic] dx={DX:.4e} dt={DT:.4e} grid={GRID_SIZE}")
 
 
-SUB_N = 4  # 4x4 stratified grid -> 16 particles per cell
-SUB = [((i + 0.5) / SUB_N, (j + 0.5) / SUB_N)
-       for i in range(SUB_N) for j in range(SUB_N)]
+def sub_offsets():
+    return [(0.25, 0.25), (0.25, 0.75), (0.75, 0.25), (0.75, 0.75)]
 
 
-def make_rect(x0, x1, y0, y1, seed=0):
-    # Stratified 4x4 sub-cell sampling with per-particle jitter inside its
-    # sub-cell (half-width = 0.5 / SUB_N). Breaks the lattice-aligned
-    # correlation between ice and water particles at the interface.
-    rng = np.random.default_rng(seed)
-    jitter_half = 0.5 / SUB_N
+SUB = sub_offsets()
+
+
+def make_rect(x0, x1, y0, y1):
     pos = []
     i0 = int(x0 / DX) - 1
     i1 = int(x1 / DX) + 2
@@ -107,17 +96,15 @@ def make_rect(x0, x1, y0, y1, seed=0):
     for i in range(i0, i1):
         for j in range(j0, j1):
             for ox, oy in SUB:
-                jx = rng.uniform(-jitter_half, jitter_half)
-                jy = rng.uniform(-jitter_half, jitter_half)
-                px = (i + ox + jx) * DX
-                py = (j + oy + jy) * DX
+                px = (i + ox) * DX
+                py = (j + oy) * DX
                 if x0 <= px <= x1 and y0 <= py <= y1:
                     pos.append((px, py))
     return np.asarray(pos, dtype=np.float32)
 
 
-water_pos = make_rect(WATER_X0, WATER_X1, WATER_Y0, WATER_Y1, seed=1)
-ice_pos = make_rect(ICE_CX - ICE_HALF, ICE_CX + ICE_HALF, ICE_CY - ICE_HALF, ICE_CY + ICE_HALF, seed=2)
+water_pos = make_rect(WATER_X0, WATER_X1, WATER_Y0, WATER_Y1)
+ice_pos = make_rect(ICE_CX - ICE_HALF, ICE_CX + ICE_HALF, ICE_CY - ICE_HALF, ICE_CY + ICE_HALF)
 
 n_water = len(water_pos)
 n_ice = len(ice_pos)
