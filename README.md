@@ -2,6 +2,8 @@
 
 Project proposal: A comparative study of recent improvements to the Material Point Method
 
+![cover][output/colliding_cubes_basic.gif]
+
 Group member:
 
 Korawich Kavee kkavee@andrew.cmu.edu
