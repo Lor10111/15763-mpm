@@ -2,7 +2,7 @@
 
 Project proposal: A comparative study of recent improvements to the Material Point Method
 
-![cover][output/colliding_cubes_basic.gif]
+![cover](output/colliding_cubes_basic.gif)
 
 Group member:
 
