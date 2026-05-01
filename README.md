@@ -11,6 +11,6 @@ Korawich Kavee kkavee@andrew.cmu.edu
 Lorene Wang lelinw@andrew.cmu.edu
 
 Goal:
-To evaluate and compare the performance, stability, and physical accuracy between CK-MPM (Compact-Kernel), A-ULMPM (Arbitrary Updated Lagrangian), and the industry-standard MLS-MPM (Moving Least Squares).
+To evaluate and compare the performance, stability, and physical accuracy between MPM variants.
 
 Course Website: https://www.cs.cmu.edu/~15763-s26/
