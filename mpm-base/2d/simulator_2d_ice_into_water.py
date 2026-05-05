@@ -106,6 +106,16 @@ def make_rect(x0, x1, y0, y1):
 water_pos = make_rect(WATER_X0, WATER_X1, WATER_Y0, WATER_Y1)
 ice_pos = make_rect(ICE_CX - ICE_HALF, ICE_CX + ICE_HALF, ICE_CY - ICE_HALF, ICE_CY + ICE_HALF)
 
+# Rotate ice block 45 degrees around its center
+_angle = np.deg2rad(45.0)
+_cos, _sin = np.cos(_angle), np.sin(_angle)
+_dx = ice_pos[:, 0] - ICE_CX
+_dy = ice_pos[:, 1] - ICE_CY
+ice_pos = np.stack([
+    ICE_CX + _cos * _dx - _sin * _dy,
+    ICE_CY + _sin * _dx + _cos * _dy,
+], axis=1).astype(np.float32)
+
 n_water = len(water_pos)
 n_ice = len(ice_pos)
 N = n_water + n_ice
