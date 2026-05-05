@@ -36,7 +36,7 @@ OUT_NPZ = os.path.join(OUT_DIR, "ice_into_water_2d_basic_metrics.npz")
 os.makedirs(OUT_DIR, exist_ok=True)
 
 # Simulation
-GRID_SIZE = 2048
+GRID_SIZE = 1024
 DX = 1.0 / GRID_SIZE
 PPC = 4
 FPS = 48
@@ -61,7 +61,7 @@ MAT_ICE = 1
 WATER_RHO = 1000.0
 WATER_K = 5e4      # bulk modulus  (CKMPM kWaterBulk_)
 WATER_GAMMA = 7.15 # Tait exponent (CKMPM kWaterGamma_)
-WATER_VISCO = 0.0  # artificial viscosity (CKMPM kWaterVisco_)
+WATER_VISCO = 0.1  # artificial viscosity (CKMPM kWaterVisco_)
 
 # Ice: stiff Fixed Corotated — match CKMPM kIce* exactly
 ICE_RHO = 900.0
